@@ -25,6 +25,9 @@ and how to extend it. For a high-level summary and install steps, see the
   single source of truth that produces both the client MPQ and the server SQL.
 - **[Spells](spells.md)** — the implemented spells (Regeneration, Temporal Beacon
   and friends): IDs, mechanics, visuals, tooltips, config.
+- **[SoD healer kit reference](healer-kit-reference.md)** — exact SoD values for the
+  Chronomancy healing spells not yet implemented (Mass Regeneration, Chronostatic
+  Preservation, Rewind Time, Temporal Anomaly), for future work.
 - **[Gotchas & troubleshooting](gotchas.md)** — the hard-won lessons, in one place.
 
 ## The one thing to internalize

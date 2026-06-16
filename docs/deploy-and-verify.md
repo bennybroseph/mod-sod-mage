@@ -60,7 +60,7 @@ the client's `Cache`/`WDB` folder — if old wording lingers, clear that folder.
   `Script named 'spell_sod_mage_* is not assigned in the database` lines. Those
   errors prove the module is compiled in but a `spell_script_names` row is missing.
 - **Spell present server-side?**
-  `SELECT ID, CastingTimeIndex FROM spell_dbc WHERE ID IN (401417,400735,900001,900002);`
+  `SELECT ID, CastingTimeIndex FROM spell_dbc WHERE ID IN (401417,412510,400735,401405,900001);`
 - **Module compiled in?** The worldserver startup log lists `Using modules
   configuration:` → `> mod_sod_mage.conf`.
 - **In-game:** `.learn <id>`, cast, watch the combat log and buff bar.

@@ -11,7 +11,7 @@ A channeled heal-over-time that also stamps Temporal Beacon.
 - **Cast:** 3s channel, 28% base mana, 40 yd, single friendly target.
 - **Effect:** periodic heal (~1s tick) over the channel, *and* on apply it casts
   **Temporal Beacon** (`400735`) on the target and ensures the Mage carries the
-  hidden **conversion aura** (`900002`).
+  hidden **conversion aura** (`900001`).
 - **Visual:** reuses Drain Life's beam (`SpellVisualID 12655`) — a green
   caster↔target channel tether. (No purple smooth beam exists in the client; see
   [Gotchas](gotchas.md).)
@@ -20,13 +20,29 @@ A channeled heal-over-time that also stamps Temporal Beacon.
 - **Script:** `spell_sod_mage_regeneration` (AuraScript, `AfterEffectApply` on the
   periodic-heal effect).
 
+## Mass Regeneration — `412510`
+
+The AoE sibling of Regeneration.
+
+- **Cast:** instant → 3s channel, 40 yd, **45% base mana**, Arcane. Drain Mana visual.
+- **Targeting:** `ImplicitTargetA = TARGET_UNIT_TARGET_ALLY` + `ImplicitTargetB =
+  TARGET_UNIT_LASTTARGET_AREA_PARTY` (10 yd) — heals the chosen ally **and their
+  party** in range (same pattern as Prayer of Healing). The core applies the
+  periodic-heal aura to each, so the script's apply hook fires once per target.
+- **Effect:** 165% of healing power over 3s to each (`spell_bonus_data dot 0.55`,
+  base 0, `SpellLevel 0`), and applies **Temporal Beacon for 15 sec** to each
+  target — half of Regeneration's 30s, set via `ApplyTemporalBeacon(...,
+  SOD_MAGE_BEACON_MS_MASS_REGEN)`.
+- **Script:** `spell_sod_mage_mass_regeneration` (AuraScript), mirrors
+  Regeneration but with the 15s beacon constant.
+
 ## Temporal Beacon — `400735`
 
 The 30s buff. Two parts:
 
 1. A small **passive HoT** (~8/sec) from its own periodic-heal effect.
 2. The signature mechanic: while it's up, the caster's **Arcane** spell damage is
-   converted to chronomantic healing on the beacon target (see `900002`).
+   converted to chronomantic healing on the beacon target (see `900001`).
 
 - **Aura:** 30s, Magic dispel, applied via triggered cast from Regeneration.
 - **Visual:** reuses Lightning Shield (`SpellVisualID 37`) — the orbiting orbs,
@@ -38,7 +54,7 @@ The 30s buff. Two parts:
   `caster GUID → beacon target GUIDs` registry on apply/remove and strips the
   conversion aura when the caster's last beacon ends.
 
-## Temporal Beacon (conversion) — `900002`  *(server-only)*
+## Temporal Beacon (conversion) — `900001`  *(server-only)*
 
 Hidden passive proc aura on the Mage; the engine of the beacon mechanic.
 
@@ -46,18 +62,18 @@ Hidden passive proc aura on the Mage; the engine of the beacon mechanic.
   `SchoolMask = Arcane`, `AttributesMask = TRIGGERED_CAN_PROC` so Arcane Missiles'
   ticks count).
 - **Effect:** heals each registered beacon target for a share of the damage via
-  **Chronomantic Healing** (`900001`).
+  **Chronomantic Healing** (`401405`).
 - **Reductions:** `SelfPct` when the beacon target is the caster; `MultiTargetPct`
   when the Arcane damage came from a multi-target spell (detected via
   `SpellInfo::IsTargetingArea()`).
 - **Script:** `spell_sod_mage_temporal_conversion` (AuraScript, `DoCheckProc` +
   `OnEffectProc`), modeled on the core's Vampiric Embrace + Beacon of Light.
 
-## Chronomantic Healing — `900001`
+## Chronomantic Healing — `401405`
 
-The instant triggered heal that the conversion aura casts. Heal amount is supplied
-at cast time (`SPELLVALUE_BASE_POINT0`). Own ID so it shows correctly in the combat
-log and benefits from healing mods. No script.
+The instant triggered heal that the conversion aura casts (the real SoD ID). Heal
+amount is supplied at cast time (`SPELLVALUE_BASE_POINT0`). Its own ID so it shows
+correctly in the combat log and benefits from healing mods. No script.
 
 ## Config (`conf/mod_sod_mage.conf.dist`)
 

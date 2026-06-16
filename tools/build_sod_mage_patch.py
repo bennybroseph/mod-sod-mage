@@ -52,6 +52,7 @@ AURA_DUMMY = 4
 AURA_PERIODIC_HEAL = 8
 TARGET_UNIT_CASTER = 1
 TARGET_UNIT_TARGET_ALLY = 21
+TARGET_UNIT_LASTTARGET_AREA_PARTY = 37  # the target's party within radius
 SCHOOL_MASK_ARCANE = 1 << 6  # 64
 DISPEL_MAGIC = 1
 NAME_MASK = 16712190  # standard "enUS available" locale mask
@@ -160,6 +161,7 @@ def build_spells(idx):
     range_self = idx["range"][0.0]
     icon_beacon = idx["icon"]["spell_nature_timestop"]
     icon_regen = idx["icon"]["inv_enchant_essencemysticalsmall"]
+    icon_regen_large = idx["icon"]["inv_enchant_essencemysticallarge"]
 
     return [
         {  # 401417 Regeneration: channeled 3s single-target HoT. A channel uses
@@ -179,7 +181,7 @@ def build_spells(idx):
                 "Attributes": 0, "AttributesEx": SPELL_ATTR1_IS_CHANNELED,
                 "CastingTimeIndex": cast_instant, "DurationIndex": dur_3s,
                 "InterruptFlags": 15, "ChannelInterruptFlags": 31756,
-                "SpellVisualID_1": 12655,  # Drain Life green caster->target beam
+                "SpellVisualID_1": 12657,  # Drain Mana blue caster->target beam
                 "RangeIndex": range_40, "PowerType": 0, "ManaCost": 0,
                 "ManaCostPct": 28, "SchoolMask": SCHOOL_MASK_ARCANE,
                 "SpellIconID": icon_regen, "EquippedItemClass": -1, "SpellLevel": 0,
@@ -187,6 +189,32 @@ def build_spells(idx):
                 "EffectAuraPeriod_1": 1000, "EffectBasePoints_1": 0,  # pure SP coeff
                 "ImplicitTargetA_1": TARGET_UNIT_TARGET_ALLY,
                 "EffectRadiusIndex_1": 0,
+                "Effect_2": 0, "EffectAura_2": 0, "ImplicitTargetA_2": 0,
+                "Effect_3": 0, "EffectAura_3": 0, "ImplicitTargetA_3": 0,
+            },
+        },
+        {  # 412510 Mass Regeneration: AoE party channeled HoT (sibling of
+           # Regeneration). Targets the chosen ally's party in radius
+           # (A = ally, B = the target's party area), like Prayer of Healing.
+            "id": 412510, "client": True, "template": 139,  # clone Renew
+            "name": "Mass Regeneration", "script": "spell_sod_mage_mass_regeneration",
+            "desc": "Heals the target and their party members for an amount equal to "
+                    "165% of your healing power over 3 sec and applies Temporal Beacon "
+                    "to each for 15 sec.",
+            "bonus": {"direct": 0.0, "dot": 0.55, "ap": 0.0, "ap_dot": 0.0},
+            "overrides": {
+                "Attributes": 0, "AttributesEx": SPELL_ATTR1_IS_CHANNELED,
+                "CastingTimeIndex": cast_instant, "DurationIndex": dur_3s,
+                "InterruptFlags": 15, "ChannelInterruptFlags": 31756,
+                "SpellVisualID_1": 12657,  # Drain Mana beam (Regeneration family)
+                "RangeIndex": range_40, "PowerType": 0, "ManaCost": 0,
+                "ManaCostPct": 45, "SchoolMask": SCHOOL_MASK_ARCANE,
+                "SpellIconID": icon_regen_large, "EquippedItemClass": -1, "SpellLevel": 0,
+                "Effect_1": EFFECT_APPLY_AURA, "EffectAura_1": AURA_PERIODIC_HEAL,
+                "EffectAuraPeriod_1": 1000, "EffectBasePoints_1": 0,
+                "ImplicitTargetA_1": TARGET_UNIT_TARGET_ALLY,
+                "ImplicitTargetB_1": TARGET_UNIT_LASTTARGET_AREA_PARTY,
+                "EffectRadiusIndex_1": 10,  # party spread radius (as Prayer of Healing)
                 "Effect_2": 0, "EffectAura_2": 0, "ImplicitTargetA_2": 0,
                 "Effect_3": 0, "EffectAura_3": 0, "ImplicitTargetA_3": 0,
             },
@@ -213,8 +241,8 @@ def build_spells(idx):
                 "Effect_3": 0, "EffectAura_3": 0, "ImplicitTargetA_3": 0,
             },
         },
-        {  # 900001 Chronomantic Healing: instant triggered heal (amount at cast).
-            "id": 900001, "client": True, "template": 2050,  # clone Lesser Heal
+        {  # 401405 Chronomantic Healing: instant triggered heal (amount at cast).
+            "id": 401405, "client": True, "template": 2050,  # clone Lesser Heal
             "name": "Chronomantic Healing",
             "overrides": {
                 "Attributes": 0, "AttributesEx": 0,
@@ -230,8 +258,8 @@ def build_spells(idx):
                 "Effect_3": 0, "EffectAura_3": 0, "ImplicitTargetA_3": 0,
             },
         },
-        {  # 900002 Temporal Beacon (conversion): server-only hidden proc aura.
-            "id": 900002, "client": False, "template": None,
+        {  # 900001 Temporal Beacon (conversion): server-only hidden proc aura.
+            "id": 900001, "client": False, "template": None,
             "name": "Temporal Beacon",
             "script": "spell_sod_mage_temporal_conversion",
             "overrides": {
@@ -394,6 +422,12 @@ def pack_mpq(spell_dbc_path, out_mpq):
 # ---------------------------------------------------------------------------
 # SQL emission (minimal named-column INSERT; unset columns take table default).
 # ---------------------------------------------------------------------------
+# IDs we used to ship but no longer do — cleaned out of every table we touch so
+# re-applying the base SQL removes the orphan server rows (the MPQ is rebuilt
+# fresh, so it never carries them).
+RETIRED_IDS = [900002]  # old conversion-aura id; conversion moved to 900001
+
+
 def emit_sql(spells, cols):
     ids = ",".join(str(s["id"]) for s in spells)
     out = [
@@ -402,8 +436,14 @@ def emit_sql(spells, cols):
         "-- do not edit by hand. The 4xxxxx IDs are mirrored by the client MPQ.",
         "",
         "DELETE FROM `spell_dbc` WHERE `ID` IN (%s);" % ids,
-        "",
     ]
+    if RETIRED_IDS:
+        r = ",".join(str(i) for i in RETIRED_IDS)
+        out += ["-- retired ids (removed across every table we own)",
+                "DELETE FROM `spell_dbc` WHERE `ID` IN (%s);" % r,
+                "DELETE FROM `spell_script_names` WHERE `spell_id` IN (%s);" % r,
+                "DELETE FROM `spell_proc` WHERE `SpellId` IN (%s);" % r]
+    out.append("")
     for s in spells:
         row = dict(s["overrides"])
         row["ID"] = s["id"]

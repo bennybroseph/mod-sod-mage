@@ -17,6 +17,7 @@
 
 #include "spell_sod_mage.h"
 #include "ObjectAccessor.h"
+#include "SpellDefines.h"
 #include "SpellInfo.h"
 #include <unordered_map>
 
@@ -27,6 +28,19 @@
 namespace
 {
     std::unordered_map<ObjectGuid, GuidUnorderedSet> sTemporalBeaconTargets;
+
+    // Applies Temporal Beacon to `target` for `durationMs` and ensures the caster
+    // carries the hidden conversion aura. The duration is overridden per caller
+    // (Regeneration 30s, Mass Regeneration 15s) instead of being baked into the
+    // beacon spell. Registry upkeep happens in the beacon AuraScript's apply hook.
+    void ApplyTemporalBeacon(Unit* caster, Unit* target, int32 durationMs)
+    {
+        caster->CastCustomSpell(SPELL_SOD_MAGE_TEMPORAL_BEACON, SPELLVALUE_AURA_DURATION,
+            durationMs, target, true);
+
+        if (!caster->HasAura(SPELL_SOD_MAGE_TEMPORAL_CONVERSION))
+            caster->CastSpell(caster, SPELL_SOD_MAGE_TEMPORAL_CONVERSION, true);
+    }
 }
 
 // 401417 Regeneration: a channeled heal-over-time that also stamps Temporal
@@ -47,16 +61,43 @@ class spell_sod_mage_regeneration : public AuraScript
         if (!caster || !target)
             return;
 
-        caster->CastSpell(target, SPELL_SOD_MAGE_TEMPORAL_BEACON, true);
-
-        if (!caster->HasAura(SPELL_SOD_MAGE_TEMPORAL_CONVERSION))
-            caster->CastSpell(caster, SPELL_SOD_MAGE_TEMPORAL_CONVERSION, true);
+        ApplyTemporalBeacon(caster, target, SOD_MAGE_BEACON_MS_REGEN);
     }
 
     void Register() override
     {
         AfterEffectApply += AuraEffectApplyFn(
             spell_sod_mage_regeneration::HandleApply,
+            EFFECT_0, SPELL_AURA_PERIODIC_HEAL, AURA_EFFECT_HANDLE_REAL);
+    }
+};
+
+// 412510 Mass Regeneration: the AoE sibling of Regeneration. The spell's own
+// party-area targeting applies the periodic heal to each party member, so this
+// hook fires once per target — stamping each with a shorter (15s) Temporal Beacon.
+class spell_sod_mage_mass_regeneration : public AuraScript
+{
+    PrepareAuraScript(spell_sod_mage_mass_regeneration);
+
+    bool Load() override
+    {
+        return SodMageEnabled();
+    }
+
+    void HandleApply(AuraEffect const* /*aurEff*/, AuraEffectHandleModes /*mode*/)
+    {
+        Unit* caster = GetCaster();
+        Unit* target = GetTarget();
+        if (!caster || !target)
+            return;
+
+        ApplyTemporalBeacon(caster, target, SOD_MAGE_BEACON_MS_MASS_REGEN);
+    }
+
+    void Register() override
+    {
+        AfterEffectApply += AuraEffectApplyFn(
+            spell_sod_mage_mass_regeneration::HandleApply,
             EFFECT_0, SPELL_AURA_PERIODIC_HEAL, AURA_EFFECT_HANDLE_REAL);
     }
 };
@@ -209,6 +250,7 @@ class spell_sod_mage_temporal_conversion : public AuraScript
 void AddSC_sod_mage_spell_scripts()
 {
     RegisterSpellScript(spell_sod_mage_regeneration);
+    RegisterSpellScript(spell_sod_mage_mass_regeneration);
     RegisterSpellScript(spell_sod_mage_temporal_beacon);
     RegisterSpellScript(spell_sod_mage_temporal_conversion);
 }

@@ -38,11 +38,12 @@ IDs. It also reuses the **real SoD IDs** for player-facing spells so a future
 | ID | Name | Side | Role |
 |----|------|------|------|
 | `401417` | Regeneration | client + server | player-cast channeled HoT; applies the beacon |
+| `412510` | Mass Regeneration | client + server | AoE party channeled HoT; applies a 15s beacon to each |
 | `400735` | Temporal Beacon | client + server | the 30s buff + passive HoT marker |
-| `900001` | Chronomantic Healing | client + server | instant triggered heal (the converted healing) |
-| `900002` | Temporal Beacon (conversion) | **server only** | hidden passive proc aura on the Mage |
+| `401405` | Chronomantic Healing | client + server | instant triggered heal (the converted healing) |
+| `900001` | Temporal Beacon (conversion) | **server only** | hidden passive proc aura on the Mage |
 
-`900002` is server-only: it's a hidden passive (no icon/tooltip), so the client
+`900001` is server-only: it's a hidden passive (no icon/tooltip), so the client
 never needs to know it. See [Spells](spells.md) for the mechanics.
 
 ## How a cast flows (Regeneration → Temporal Beacon)
@@ -51,9 +52,9 @@ never needs to know it. See [Spells](spells.md) for the mechanics.
    applies on the target.
 2. The Regeneration `AuraScript` (on apply) casts **Temporal Beacon** (`400735`)
    on the target and ensures the Mage carries the hidden **conversion aura**
-   (`900002`).
-3. While a beacon is up, any **Arcane** spell damage the Mage deals procs `900002`,
-   which heals each beacon target via **Chronomantic Healing** (`900001`).
+   (`900001`).
+3. While a beacon is up, any **Arcane** spell damage the Mage deals procs `900001`,
+   which heals each beacon target via **Chronomantic Healing** (`401405`).
 4. A small file-static registry maps `caster GUID → beacon target GUIDs` so the
    proc knows where to route healing (modeled on the core's Beacon of Light).
 
