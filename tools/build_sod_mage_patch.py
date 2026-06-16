@@ -166,8 +166,15 @@ def build_spells(idx):
            # an instant CastingTimeIndex; its length comes from the duration.
             "id": 401417, "client": True, "template": 139,  # clone Renew
             "name": "Regeneration", "script": "spell_sod_mage_regeneration",
-            "desc": "Heals the target for $o1 health over 3 sec and applies "
-                    "Temporal Beacon for 30 sec.",
+            # Static wording: the 3.3.5a client can't resolve a server-side
+            # coefficient (no $<healpower> engine, no client coeff override), so a
+            # dynamic token would under-report. State the SoD value plainly instead.
+            "desc": "Heals the target for an amount equal to 165% of your healing "
+                    "power over 3 sec and applies Temporal Beacon for 30 sec.",
+            # SoD: heals 165% of healing power over 3 ticks, no flat base. We model
+            # that with a 0.55/tick spellpower coefficient (spell_bonus_data) and a
+            # zero base. SpellLevel 0 avoids AzerothCore's low-level coefficient penalty.
+            "bonus": {"direct": 0.0, "dot": 0.55, "ap": 0.0, "ap_dot": 0.0},
             "overrides": {
                 "Attributes": 0, "AttributesEx": SPELL_ATTR1_IS_CHANNELED,
                 "CastingTimeIndex": cast_instant, "DurationIndex": dur_3s,
@@ -175,9 +182,9 @@ def build_spells(idx):
                 "SpellVisualID_1": 12655,  # Drain Life green caster->target beam
                 "RangeIndex": range_40, "PowerType": 0, "ManaCost": 0,
                 "ManaCostPct": 28, "SchoolMask": SCHOOL_MASK_ARCANE,
-                "SpellIconID": icon_regen, "EquippedItemClass": -1,
+                "SpellIconID": icon_regen, "EquippedItemClass": -1, "SpellLevel": 0,
                 "Effect_1": EFFECT_APPLY_AURA, "EffectAura_1": AURA_PERIODIC_HEAL,
-                "EffectAuraPeriod_1": 1000, "EffectBasePoints_1": 54,  # ~55/tick
+                "EffectAuraPeriod_1": 1000, "EffectBasePoints_1": 0,  # pure SP coeff
                 "ImplicitTargetA_1": TARGET_UNIT_TARGET_ALLY,
                 "EffectRadiusIndex_1": 0,
                 "Effect_2": 0, "EffectAura_2": 0, "ImplicitTargetA_2": 0,
@@ -421,6 +428,17 @@ def emit_sql(spells, cols):
         vals = ",\n".join("(%d,'%s')" % (s["id"], s["script"]) for s in scripted)
         out.append("INSERT INTO `spell_script_names` "
                    "(`spell_id`, `ScriptName`) VALUES\n%s;" % vals)
+
+    bonuses = [s for s in spells if s.get("bonus")]
+    if bonuses:
+        bids = ",".join(str(s["id"]) for s in bonuses)
+        out += ["", "DELETE FROM `spell_bonus_data` WHERE `entry` IN (%s);" % bids]
+        for s in bonuses:
+            b = s["bonus"]
+            out.append("INSERT INTO `spell_bonus_data` "
+                       "(`entry`, `direct_bonus`, `dot_bonus`, `ap_bonus`, `ap_dot_bonus`, `comments`) "
+                       "VALUES (%d, %s, %s, %s, %s, 'mod-sod-mage %s');"
+                       % (s["id"], b["direct"], b["dot"], b["ap"], b["ap_dot"], s["name"]))
 
     procs = [s for s in spells if s.get("proc")]
     if procs:

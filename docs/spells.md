@@ -68,8 +68,18 @@ log and benefits from healing mods. No script.
 | `SodMage.TemporalBeacon.SelfPct` | 50 | % of that healing kept when the target is the caster. |
 | `SodMage.TemporalBeacon.MultiTargetPct` | 20 | % kept when the damage came from a multi-target spell. |
 
-## Open tuning items
+## Accuracy vs. SoD (checked against wago.tools, build 1.15.8.x)
 
-Heal coefficients (the per-tick base points for Regeneration and the beacon HoT)
-and the "multi-target Arcane" detection are first-pass placeholders, not
-SoD-exact. Adjust in the generator spec (DBC) and config.
+Verified against the real SoD DB2 data (see CLAUDE.md → "Pulling SoD reference
+data"):
+
+- **Temporal Beacon — accurate.** Conversion 70% / self-reduced 50% / multi-target
+  reduced 80% (our `ConversionPct=70`, `SelfPct=50`, `MultiTargetPct=20` kept all
+  match `$s4/$s5/$s6`), passive HoT 8/sec, 30s, 100yd, instant, Arcane — all match.
+- **Regeneration — one gap.** Cast/duration/range/mana(28%)/school all match. But
+  SoD heals for **165% of healing power over 3 sec** (`$<healpower>*$m1/100*3`,
+  `$m1=55`, *pure spellpower scaling, no flat base*), whereas ours is a flat
+  ~55/tick with no spellpower coefficient. Closing this is a balance/scaling change
+  (set the effect's healing coefficient); deferred while balance is out of scope.
+
+The "multi-target Arcane" detection (`IsTargetingArea()`) remains a heuristic.
