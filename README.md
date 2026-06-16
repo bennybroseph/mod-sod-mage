@@ -72,9 +72,7 @@ Start at [docs/Home.md](docs/Home.md).
 
 ## Conventions
 
-No core edits — everything stays under `modules/mod-sod-mage/`. See
-[CLAUDE.md](CLAUDE.md) for module conventions (naming, config-gating, SQL rules,
-code style).
+No core edits — everything stays under `modules/mod-sod-mage/`.
 
 ## License
 
