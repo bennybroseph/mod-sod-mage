@@ -22,3 +22,30 @@
 #
 
 SodMage.Enable = 1
+
+#
+#    SodMage.TemporalBeacon.ConversionPct
+#        Description: Percent of the caster's Arcane spell damage converted to
+#                     chronomantic healing on each Temporal Beacon target.
+#        Default:     70
+#
+
+SodMage.TemporalBeacon.ConversionPct = 70
+
+#
+#    SodMage.TemporalBeacon.SelfPct
+#        Description: Percent of the converted healing kept when the beacon
+#                     target is the caster (i.e. a 50% reduction at 50).
+#        Default:     50
+#
+
+SodMage.TemporalBeacon.SelfPct = 50
+
+#
+#    SodMage.TemporalBeacon.MultiTargetPct
+#        Description: Percent of the converted healing kept when the Arcane
+#                     damage came from a multi-target spell (80% reduction at 20).
+#        Default:     20
+#
+
+SodMage.TemporalBeacon.MultiTargetPct = 20

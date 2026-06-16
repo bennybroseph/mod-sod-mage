@@ -26,12 +26,16 @@
 
 #define MODULE_STRING "mod-sod-mage"
 
-// Custom spell IDs owned by this module.
-// Keep these in a reserved high band to avoid clashing with Blizzlike data
-// and other modules. Mirror every ID here with a row in spell_dbc (base SQL).
+// Spell IDs owned by this module. The 4xxxxx pair are the real Season of
+// Discovery IDs (matched by the client MPQ patch); the 9000xx pair are custom
+// server-side helpers in this module's reserved 900000-900099 band. Every ID
+// here has a row in spell_dbc (base SQL); 900002 is server-only.
 enum SodMageSpells
 {
-    // SPELL_SOD_MAGE_LIVING_FLAME = 900000,
+    SPELL_SOD_MAGE_REGENERATION         = 401417, // channeled HoT, applies beacon
+    SPELL_SOD_MAGE_TEMPORAL_BEACON      = 400735, // target marker + passive HoT
+    SPELL_SOD_MAGE_TEMPORAL_BEACON_HEAL = 900001, // triggered chronomantic heal
+    SPELL_SOD_MAGE_TEMPORAL_CONVERSION  = 900002, // hidden caster-side proc aura
 };
 
 // Reads the module master enable flag.

@@ -1,6 +1,9 @@
 # Module config — generated from conf/*.conf.dist at build time
 conf/*.conf
 
+# MPQ generator scratch (extracted client DBCs, patched output)
+tools/_work/
+
 # Prerequisites
 *.d
 
