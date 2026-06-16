@@ -56,9 +56,12 @@ TARGET_UNIT_LASTTARGET_AREA_PARTY = 37  # the target's party within radius
 SCHOOL_MASK_ARCANE = 1 << 6  # 64
 DISPEL_MAGIC = 1
 NAME_MASK = 16712190  # standard "enUS available" locale mask
-# Proc on the caster dealing harmful magic/none-class spell damage.
+# Proc on the caster dealing harmful magic/none-class spell damage, plus ranged
+# auto-attacks so an Arcane wand (a ranged auto-attack of Arcane school) also feeds
+# the beacon. The Arcane SchoolMask filter keeps non-Arcane wands out.
 PROC_DONE_MAGIC_NEG = 0x00010000
 PROC_DONE_NONE_NEG = 0x00001000
+PROC_DONE_RANGED_AUTO = 0x00000040
 
 
 # ---------------------------------------------------------------------------
@@ -267,22 +270,30 @@ def build_spells(idx):
                 "CastingTimeIndex": cast_instant, "DurationIndex": dur_perm,
                 "RangeIndex": range_self, "SchoolMask": SCHOOL_MASK_ARCANE,
                 "EquippedItemClass": -1,
-                "ProcTypeMask": PROC_DONE_MAGIC_NEG | PROC_DONE_NONE_NEG,
+                "ProcTypeMask": PROC_DONE_MAGIC_NEG | PROC_DONE_NONE_NEG | PROC_DONE_RANGED_AUTO,
                 "ProcChance": 100,
                 "Effect_1": EFFECT_APPLY_AURA, "EffectAura_1": AURA_DUMMY,
                 "ImplicitTargetA_1": TARGET_UNIT_CASTER,
                 "EffectBasePoints_1": 0,
             },
             # spell_proc row is REQUIRED: an aura with no spell_proc entry never
-            # procs (Aura::GetProcEffectMask returns 0). Restrict to Arcane
-            # damage; AttributesMask=2 (TRIGGERED_CAN_PROC) lets Arcane Missiles'
-            # triggered ticks also feed the beacon. Chance/ProcFlags fall back to
+            # procs (Aura::GetProcEffectMask returns 0). AttributesMask=2
+            # (TRIGGERED_CAN_PROC) lets Arcane Missiles' triggered ticks (and the
+            # triggered wand shot) feed the beacon. Chance/ProcFlags fall back to
             # the spell_dbc values when left 0.
+            #
+            # SchoolMask is left 0 (no engine-level school filter) on purpose: the
+            # proc engine's school check uses ProcEventInfo::GetSchoolMask(), which
+            # returns the *spell's* base school when a proc spell is present — and a
+            # wand's "Shoot" (5019) is base-school Physical even when the wand deals
+            # Arcane. A SchoolMask=Arcane here would reject the arcane wand. Instead
+            # CheckProc filters on the *damage's* school (the real Arcane), which is
+            # correct for both spells and wands.
             "proc": {
-                "SchoolMask": SCHOOL_MASK_ARCANE, "SpellFamilyName": 0,
+                "SchoolMask": 0, "SpellFamilyName": 0,
                 "SpellFamilyMask0": 0, "SpellFamilyMask1": 0,
                 "SpellFamilyMask2": 0,
-                "ProcFlags": PROC_DONE_MAGIC_NEG | PROC_DONE_NONE_NEG,
+                "ProcFlags": PROC_DONE_MAGIC_NEG | PROC_DONE_NONE_NEG | PROC_DONE_RANGED_AUTO,
                 "SpellTypeMask": 1,    # PROC_SPELL_TYPE_DAMAGE
                 "SpellPhaseMask": 2,   # PROC_SPELL_PHASE_HIT
                 "HitMask": 0, "AttributesMask": 2, "DisableEffectsMask": 0,

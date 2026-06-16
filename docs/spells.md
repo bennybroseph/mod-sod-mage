@@ -59,9 +59,10 @@ The 30s buff. Two parts:
 
 Hidden passive proc aura on the Mage; the engine of the beacon mechanic.
 
-- **Trigger:** the Mage dealing **Arcane** spell damage (`spell_proc` row with
+- **Trigger:** the Mage dealing **Arcane** damage (`spell_proc` row with
   `SchoolMask = Arcane`, `AttributesMask = TRIGGERED_CAN_PROC` so Arcane Missiles'
-  ticks count).
+  ticks count). The proc flags include ranged auto-attack, so an **Arcane wand**
+  also feeds the beacon; the Arcane school filter keeps non-Arcane wands out.
 - **Effect:** heals each registered beacon target for a share of the damage via
   **Chronomantic Healing** (`401405`).
 - **Reductions:** `SelfPct` when the beacon target is the caster; `MultiTargetPct`

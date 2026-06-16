@@ -178,10 +178,10 @@ class spell_sod_mage_temporal_conversion : public AuraScript
         if (!damageInfo || !damageInfo->GetDamage())
             return false;
 
-        // Only the caster's Arcane spell damage feeds the beacon.
-        if (!eventInfo.GetSpellInfo())
-            return false;
-
+        // Any Arcane damage the caster deals feeds the beacon — Arcane spells and
+        // an Arcane wand alike. We don't require a SpellInfo, so wand ranged
+        // auto-attacks (which carry no cast spell) still qualify; the proc flags
+        // and this school check do the filtering.
         return (damageInfo->GetSchoolMask() & SPELL_SCHOOL_MASK_ARCANE) != 0;
     }
 
