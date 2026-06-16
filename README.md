@@ -14,16 +14,20 @@ one definition.
 
 ## Current state — early / proof of concept
 
-One ability set is implemented and working in-game:
+Part of the SoD "Chronomancy" healing kit is implemented and working in-game:
 
 - **Regeneration** — a channeled 3s heal-over-time that applies **Temporal Beacon**.
+- **Mass Regeneration** — the AoE version: a channeled 3s heal-over-time on the
+  target and their party, applying a (shorter) Temporal Beacon to each.
 - **Temporal Beacon** — a 30s buff that converts a share of the Mage's **Arcane**
   damage into healing on the beacon target (reduced on self and for multi-target
   spells), plus a small passive heal-over-time.
 
-Custom icons, visuals (Regeneration uses Drain Life's beam; Temporal Beacon uses
-Lightning Shield's orbiting effect), and tooltips are in place. Heal numbers are
-first-pass placeholders, not balanced. More spells are planned.
+Custom icons, visuals (the Regeneration spells reuse Drain Mana's beam; Temporal
+Beacon reuses Lightning Shield's orbiting effect), and tooltips are in place.
+Healing values match SoD where implemented (e.g. Regeneration's 165%-of-healing-
+power scaling); no broader balance pass yet. More of the kit (Chronostatic
+Preservation, Rewind Time, Temporal Anomaly) is documented and planned.
 
 ## Install
 
@@ -58,10 +62,11 @@ adjust for other locales. Launch the client after generating.
 
 ### Use it
 
-No trainer entry yet — learn it directly:
+No trainer entry yet — learn the spells directly:
 
 ```
-.learn 401417
+.learn 401417    # Regeneration
+.learn 412510    # Mass Regeneration
 ```
 
 ## Documentation

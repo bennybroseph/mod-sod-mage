@@ -14,7 +14,7 @@ The client can only render what it already has. Before writing anything, decide:
   name).
 - **Visual** — reuse an existing `SpellVisualID`. There is no way to recolor a
   beam without custom art; pick a visual that already looks right. (Regeneration
-  reuses Drain Life's beam `12655`; Temporal Beacon reuses Lightning Shield `37`.)
+  reuses Drain Mana's beam `12657`; Temporal Beacon reuses Lightning Shield `37`.)
 - **Template to clone** — a real spell with the right *shape* (channel, HoT,
   instant heal…) so the cloned record's index columns are valid.
 

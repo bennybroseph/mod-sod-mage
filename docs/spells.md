@@ -12,11 +12,12 @@ A channeled heal-over-time that also stamps Temporal Beacon.
 - **Effect:** periodic heal (~1s tick) over the channel, *and* on apply it casts
   **Temporal Beacon** (`400735`) on the target and ensures the Mage carries the
   hidden **conversion aura** (`900001`).
-- **Visual:** reuses Drain Life's beam (`SpellVisualID 12655`) — a green
-  caster↔target channel tether. (No purple smooth beam exists in the client; see
+- **Visual:** reuses Drain Mana's beam (`SpellVisualID 12657`) — a blue
+  caster↔target channel tether. (There's no purple smooth beam in the client; see
   [Gotchas](gotchas.md).)
-- **Tooltip:** `Heals the target for $o1 health over 3 sec and applies Temporal
-  Beacon for 30 sec.` (`$o1` = client-computed total HoT.)
+- **Tooltip:** `Heals the target for an amount equal to 165% of your healing power
+  over 3 sec and applies Temporal Beacon for 30 sec.` — static wording, since the
+  3.3.5a client can't show a server-side coefficient ([Gotchas](gotchas.md)).
 - **Script:** `spell_sod_mage_regeneration` (AuraScript, `AfterEffectApply` on the
   periodic-heal effect).
 
@@ -86,8 +87,7 @@ correctly in the combat log and benefits from healing mods. No script.
 
 ## Accuracy vs. SoD (checked against wago.tools, build 1.15.8.x)
 
-Verified against the real SoD DB2 data (see CLAUDE.md → "Pulling SoD reference
-data"):
+Verified against the real SoD DB2 data (see [Pulling SoD data](pulling-sod-data.md)):
 
 - **Temporal Beacon — accurate.** Conversion 70% / self-reduced 50% / multi-target
   reduced 80% (our `ConversionPct=70`, `SelfPct=50`, `MultiTargetPct=20` kept all

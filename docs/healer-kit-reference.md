@@ -7,7 +7,7 @@ implementation. Values pulled from **wago.tools**, `wow_classic_era` build
 in WotLK 3.3.5a `Spell.dbc`. See [Gotchas](gotchas.md) for how to pull this data and
 [Architecture](architecture.md) for how we deliver a spell.
 
-> **Porting caveats (see CLAUDE.md → "Pulling SoD reference data"):** modern
+> **Porting caveats (see [Pulling SoD data](pulling-sod-data.md)):** modern
 > effect/aura *type* enums differ from 3.3.5a — map by meaning, not number. Modern
 > `EffectBasePoints` is the actual value; 3.3.5a stores value − 1. Spellpower
 > scaling (the `$<healpower>*$mN/100` tooltips) is done server-side via
