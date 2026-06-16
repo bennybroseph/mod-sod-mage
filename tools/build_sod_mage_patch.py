@@ -5,7 +5,9 @@ Single source of truth: SPELLS below. For each new spell we clone a real
 template record from the client's effective Spell.dbc (so every index column
 is valid), apply our overrides, and emit BOTH:
 
-  * a patched Spell.dbc packed into a client patch MPQ (real SoD IDs only), and
+  * a patched Spell.dbc packed into a client patch MPQ (real SoD IDs only),
+  * a patched SkillLineAbility.dbc in the same MPQ so spells flagged with a
+    `skill_line` land under the right spellbook tab (client-side grouping), and
   * a spell_dbc INSERT (named columns) for the server.
 
 Index/icon values are resolved at runtime from the client's own DBCs, so the
@@ -39,6 +41,7 @@ TABLE_DEF = os.path.join(REPO_ROOT, "data", "sql", "base", "db_world",
 PATCH_MPQ_NAME = "patch-enus-z.mpq"  # highest-priority locale patch letter
 
 INNER = "DBFilesClient\\Spell.dbc"
+SKILL_INNER = "DBFilesClient\\SkillLineAbility.dbc"
 
 # ---------------------------------------------------------------------------
 # Enum values (from core SharedDefines.h / SpellAuraDefines.h).
@@ -55,6 +58,7 @@ TARGET_UNIT_TARGET_ALLY = 21
 TARGET_UNIT_LASTTARGET_AREA_PARTY = 37  # the target's party within radius
 SCHOOL_MASK_ARCANE = 1 << 6  # 64
 DISPEL_MAGIC = 1
+SKILL_ARCANE = 237  # mage Arcane skill line; controls the spellbook tab (client-side)
 NAME_MASK = 16712190  # standard "enUS available" locale mask
 # Proc on the caster dealing harmful magic/none-class spell damage, plus ranged
 # auto-attacks so an Arcane wand (a ranged auto-attack of Arcane school) also feeds
@@ -170,6 +174,7 @@ def build_spells(idx):
         {  # 401417 Regeneration: channeled 3s single-target HoT. A channel uses
            # an instant CastingTimeIndex; its length comes from the duration.
             "id": 401417, "client": True, "template": 139,  # clone Renew
+            "skill_line": SKILL_ARCANE,  # spellbook tab: Arcane
             "name": "Regeneration", "script": "spell_sod_mage_regeneration",
             # Static wording: the 3.3.5a client can't resolve a server-side
             # coefficient (no $<healpower> engine, no client coeff override), so a
@@ -200,6 +205,7 @@ def build_spells(idx):
            # Regeneration). Targets the chosen ally's party in radius
            # (A = ally, B = the target's party area), like Prayer of Healing.
             "id": 412510, "client": True, "template": 139,  # clone Renew
+            "skill_line": SKILL_ARCANE,  # spellbook tab: Arcane
             "name": "Mass Regeneration", "script": "spell_sod_mage_mass_regeneration",
             "desc": "Heals the target and their party members for an amount equal to "
                     "165% of your healing power over 3 sec and applies Temporal Beacon "
@@ -408,12 +414,46 @@ def extract_client_dbcs(client_dir, dest):
 
     used = {}
     for dbc in ("Spell.dbc", "SpellCastTimes.dbc", "SpellDuration.dbc",
-                "SpellRange.dbc", "SpellRadius.dbc", "SpellIcon.dbc"):
+                "SpellRange.dbc", "SpellRadius.dbc", "SpellIcon.dbc",
+                "SkillLineAbility.dbc"):
         used[dbc] = extract(dbc)
     return used
 
 
-def pack_mpq(spell_dbc_path, out_mpq):
+def build_skill_line_ability(workdir, spells):
+    """Append SkillLineAbility rows so categorized spells land in the right
+    spellbook tab (the client groups known spells into tabs by their skill
+    line). Returns the patched file path, or None if no spell opts in.
+
+    Rows are zeroed except ID / SkillLine / Spell: no race or class restriction,
+    no skill-rank requirement, and AcquireMethod 0 (not trainer/auto-learned) —
+    purely a display-categorization entry. The full (base + appended) file is
+    packed into the patch MPQ, overriding the client's copy.
+    """
+    targets = [s for s in spells if s.get("client") and s.get("skill_line")]
+    if not targets:
+        return None
+
+    sla = WDBC.load(os.path.join(workdir, "SkillLineAbility.dbc"))
+    next_id = max(sla.get_int(r, 0) for r in sla.records) + 1
+    for s in targets:
+        rec = bytearray(sla.recsize)
+        sla.set_int(rec, 0, next_id)          # ID
+        sla.set_int(rec, 1, s["skill_line"])  # SkillLine (237 = Arcane)
+        sla.set_int(rec, 2, s["id"])          # Spell
+        sla.records.append(rec)
+        print("[*] SkillLineAbility row added: spell %d -> skill line %d (id %d)"
+              % (s["id"], s["skill_line"], next_id))
+        next_id += 1
+
+    out = os.path.join(workdir, "SkillLineAbility.dbc.patched")
+    with open(out, "wb") as fh:
+        fh.write(sla.serialize())
+    return out
+
+
+def pack_mpq(files, out_mpq):
+    """files: list of (src_path, inner_mpq_path) to add to a fresh patch MPQ."""
     import pympq
     if os.path.exists(out_mpq):
         os.remove(out_mpq)
@@ -423,9 +463,10 @@ def pack_mpq(spell_dbc_path, out_mpq):
          pympq.MPQ_CREATE_ATTRIBUTES],
         8)
     try:
-        m.add_file(spell_dbc_path, INNER,
-                   [pympq.MPQ_FILE_COMPRESS, pympq.MPQ_FILE_REPLACEEXISTING],
-                   [pympq.MPQ_COMPRESSION_ZLIB])
+        for src, inner in files:
+            m.add_file(src, inner,
+                       [pympq.MPQ_FILE_COMPRESS, pympq.MPQ_FILE_REPLACEEXISTING],
+                       [pympq.MPQ_COMPRESSION_ZLIB])
     finally:
         m.close()
 
@@ -562,6 +603,9 @@ def main():
         fh.write(spell.serialize())
     print("[*] wrote patched Spell.dbc (%d records)" % len(spell.records))
 
+    # --- build patched client SkillLineAbility.dbc (spellbook tab grouping) ---
+    sla_patched = build_skill_line_ability(args.workdir, spells)
+
     # --- emit SQL ---
     os.makedirs(os.path.dirname(SQL_OUT), exist_ok=True)
     with open(SQL_OUT, "w", encoding="utf-8", newline="\n") as fh:
@@ -573,8 +617,11 @@ def main():
         print("[*] dry-run: skipping MPQ pack")
         return
     out_mpq = os.path.join(args.client, "data", "enus", PATCH_MPQ_NAME)
-    pack_mpq(patched, out_mpq)
-    print("[*] wrote client patch ->", out_mpq)
+    files = [(patched, INNER)]
+    if sla_patched:
+        files.append((sla_patched, SKILL_INNER))
+    pack_mpq(files, out_mpq)
+    print("[*] wrote client patch -> %s (%d DBC file(s))" % (out_mpq, len(files)))
 
 
 if __name__ == "__main__":

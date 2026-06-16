@@ -41,8 +41,12 @@ You need both halves. Server first, then the client patch.
 3. Apply the base SQL to your **`acore_world`** database:
    ```bash
    mysql -u <user> -p acore_world < modules/mod-sod-mage/data/sql/db-world/base/sod_mage_spell_dbc.sql
+   mysql -u <user> -p acore_world < modules/mod-sod-mage/data/sql/db-world/base/sod_mage_runes.sql
    ```
-   (Idempotent — safe to re-run. Seeds `spell_dbc`, `spell_script_names`, `spell_proc`.)
+   (Idempotent — safe to re-run. `sod_mage_spell_dbc.sql` seeds `spell_dbc`,
+   `spell_script_names`, `spell_proc`. `sod_mage_runes.sql` registers the spells
+   as engravable runes and is a **no-op unless** the optional rune engine is
+   installed — see below.)
 4. Restart the worldserver (these tables load at startup).
 
 ### Client patch (required — otherwise the spells won't render)
@@ -68,6 +72,17 @@ No trainer entry yet — learn the spells directly:
 .learn 401417    # Regeneration
 .learn 412510    # Mass Regeneration
 ```
+
+### Optional: engravable runes (`mod-rune-engraving`)
+
+This module's spells can also be acquired as **engravable runes** if the reusable
+[`mod-rune-engraving`](../mod-rune-engraving) engine is installed alongside it.
+`sod_mage_runes.sql` writes this module's runes into the engine's catalog,
+guarded so it's a harmless no-op when the engine is absent — `mod-sod-mage`
+installs and works fine on its own (spells via `.learn`). With the engine
+present, a Mage can engrave **Regeneration** at the Rune Engraver NPC.
+
+This module owns the rune-id band **7000000–7000999** in the engine's catalog.
 
 ## Documentation
 

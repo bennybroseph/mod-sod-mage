@@ -155,7 +155,7 @@ class spell_sod_mage_temporal_beacon : public AuraScript
     }
 };
 
-// 900002 Temporal Beacon (conversion): hidden passive on the Mage. Converts a
+// 900001 Temporal Beacon (conversion): hidden passive on the Mage. Converts a
 // share of the caster's Arcane spell damage into chronomantic healing on each
 // of their beacon targets, reduced on self and for multi-target Arcane spells.
 class spell_sod_mage_temporal_conversion : public AuraScript
