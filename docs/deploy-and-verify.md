@@ -6,13 +6,19 @@ change involves so you only do the work needed.
 
 | Change type | Rebuild worldserver? | Apply SQL + restart? | Repack MPQ + relaunch client? |
 |-------------|:--:|:--:|:--:|
-| C++ script logic | ✅ | — | — |
+| C++ script logic (spell or item scripts) | ✅ | — | — |
 | `spell_dbc` / `spell_script_names` / `spell_proc` | — | ✅ | — |
 | Client visual / tooltip / icon / cast time | — | (optional¹) | ✅ |
+| Rune catalog / item chain (`item_template`, loot, vendor, `rune_*`) | — | ✅ | (item icons²) |
 
 ¹ Cast time lives in both halves; visuals/tooltips/icons are client-only — the
 server ignores `SpellVisualID`, `Description`, etc., so re-applying SQL for those
 is only for keeping the DB row byte-identical to the file.
+
+² A custom item's name/stats/tooltip come from the server, but its **bag inventory
+icon** is resolved client-side from `Item.dbc`. New/changed custom items need the
+patch MPQ regenerated (it carries `Item.dbc`), or they show a red "?" in bags. See
+[Gotchas](gotchas.md).
 
 ## 1. Regenerate artifacts
 
@@ -29,6 +35,13 @@ patch MPQ. See [Spell generator](spell-generator.md).
 mysql -u <user> -p acore_world < modules/mod-sod-mage/data/sql/db-world/base/sod_mage_spell_dbc.sql
 ```
 
+The module ships more base SQL than just the spells — apply all of
+`data/sql/db-world/base/` to `acore_world`: `sod_mage_spell_dbc.sql`,
+`sod_mage_module_string.sql`, `sod_mage_runes.sql` (rune catalog), and the gated
+runes `sod_mage_quest_runes.sql` (quest) + `sod_mage_regeneration_unlock.sql`
+(item chain). The rune files are **engine-guarded** — a clean no-op without
+`mod-rune-engraving`. See the [README](../README.md) for the full list.
+
 For a Dockerized server, run it through the DB container instead (adjust names/creds
 to your setup), e.g.:
 
@@ -36,7 +49,7 @@ to your setup), e.g.:
 docker exec -i ac-database mysql -uroot -p<pw> acore_world < .../sod_mage_spell_dbc.sql
 ```
 
-The file does `DELETE … WHERE id IN (…)` then `INSERT`, so re-running is safe.
+Every file does `DELETE … WHERE …` (own ids) then `INSERT`, so re-running is safe.
 
 > Note: `docker compose restart` does **not** re-run the `db-import` service — that
 > only runs on `up`. So a plain restart never applies changed SQL; apply it

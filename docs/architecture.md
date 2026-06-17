@@ -29,6 +29,19 @@ the spell casts server-side with only the SQL applied.)
 
 The client has no such overlay — hence the MPQ patch.
 
+## Custom items: a smaller version of the same split
+
+The module also ships custom **items** (the rune-acquisition chain — a charm and
+spell notes). Items are *mostly* server-authoritative: a custom `item_template`
+row gives the client its name, stats, and tooltip via the item-query response, so
+**no** client patch is needed for those. The one exception is the **bag inventory
+icon**, which the client resolves from its own `Item.dbc` (itemId → `DisplayInfoID`
+→ icon). A custom item id absent from `Item.dbc` shows a red "?" in bags (the
+vendor frame is fine — the vendor packet carries the displayid). So the same patch
+MPQ also carries an `Item.dbc` with a row per custom item; reuse an existing
+`DisplayInfoID` (no new art). See [Gotchas](gotchas.md) and the
+[generator](spell-generator.md)'s `ITEMS` list.
+
 ## Spell ID allocation
 
 The module reserves the band **900000–900099** for its own server-side helper

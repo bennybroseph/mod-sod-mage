@@ -91,3 +91,16 @@ Tooltip strings live in the client `Spell.dbc` (`Description_Lang_enUS`,
 `AuraDescription_Lang_enUS`). If new wording doesn't show after relaunch, delete the
 client's `Cache`/`WDB` folder to force a refresh. Tokens like `$o1` (total periodic),
 `$s1` (per-tick), `$d` (duration) are computed by the client from its own DBC.
+
+## Custom item shows a "?" icon in bags (but the vendor icon is fine)
+
+A custom item's name/stats/tooltip come from the server item-query, but its **bag
+inventory icon** is resolved client-side from the client's own `Item.dbc`
+(itemId → `DisplayInfoID` → `ItemDisplayInfo` icon). A custom item id absent from
+`Item.dbc` shows the red "?" icon in bags. The **vendor** frame is unaffected — the
+vendor packet carries the displayid directly — which is the tell: vendor OK, bag
+"?". Clearing the `Cache`/`WDB` folder does **not** fix it (the icon never came from
+that cache). The fix is a client `Item.dbc` row per custom item, shipped in the
+patch MPQ — the [generator](spell-generator.md)'s `ITEMS` list does this; regenerate
+and reinstall the patch. Reuse an existing `DisplayInfoID` (find one by its
+`InventoryIcon` in `ItemDisplayInfo.dbc`) so no new art is needed.

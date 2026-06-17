@@ -4,6 +4,12 @@ Reference for the spells implemented so far. IDs and mechanics are defined in
 `src/spell_sod_mage.h` / `src/spell_sod_mage.cpp` and the generator spec in
 `tools/build_sod_mage_patch.py`.
 
+**Acquisition:** by default these are GM-`.learn`-only. With the optional
+[`mod-rune-engraving`](../../mod-rune-engraving) engine installed, **Regeneration**
+and **Mass Regeneration** are also acquirable as **engravable runes** — Regeneration
+via the SoD item chain (Comprehension Charm + Spell Notes), Mass Regeneration via a
+quest. See the [README](../README.md) for the player-facing flow.
+
 ## Regeneration — `401417`
 
 A channeled heal-over-time that also stamps Temporal Beacon.

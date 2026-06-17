@@ -17,8 +17,9 @@ loads), so every index is correct and identical on both sides.
 
 ## Pipeline (run once the client `Data/` path is known)
 
-1. **Extract** from the client MPQs: `Spell.dbc`, `SpellCastTimes.dbc`,
-   `SpellDuration.dbc`, `SpellRange.dbc`, `SpellRadius.dbc`, `SpellIcon.dbc`.
+1. **Extract** from the client MPQs (respecting MPQ patch priority): `Spell.dbc`,
+   the index DBCs `SpellCastTimes`/`SpellDuration`/`SpellRange`/`SpellRadius`/
+   `SpellIcon`, plus `SkillLineAbility.dbc` and `Item.dbc`.
 2. **Clone + override** (pure-Python WDBC reader/writer, no deps): for each new
    spell, clone a real template record (so all index fields are valid), then
    override only what changes. Resolve desired duration/range/cast-time by
@@ -27,19 +28,28 @@ loads), so every index is correct and identical on both sides.
    tables (idempotent, scoped to our IDs): `spell_dbc` (the spells),
    `spell_script_names` (binds the C++ scripts to their spell IDs — without
    this the scripts never run), and `spell_proc` (the conversion proc).
-4. **Repack** the patched DBC into `patch-?.MPQ` and drop it in the client
-   `Data/` folder. (MPQ packer TBD — e.g. Ladik's MPQ Editor CLI.)
+4. **Patch `SkillLineAbility.dbc`** so a spell flagged with a `skill_line` lands
+   under the right spellbook tab (client-side grouping; e.g. Arcane = 237).
+5. **Patch `Item.dbc`** with a row per custom item (the `ITEMS` list) so each
+   resolves its **bag inventory icon** (itemId → DisplayInfoID). A custom item's
+   name/stats come from the server, but the bag icon is client-side — without an
+   `Item.dbc` row the item shows a red "?" in bags (the vendor frame is fine, as
+   the vendor packet carries the displayid). `ITEMS` must mirror the
+   `item_template` rows in `sod_mage_regeneration_unlock.sql`.
+6. **Repack** the three patched DBCs into the client patch (`patch-enus-z.mpq`)
+   via StormLib (the `pympq` binding) and drop it in the client locale `Data/`
+   folder. (Implemented — no external MPQ tool needed.)
 
-## Spell specs (single source of truth)
+## Specs (single source of truth)
 
-| ID | Clone template | Overrides |
-|----|----------------|-----------|
-| `401417` Regeneration | a 3s channeled periodic-heal spell | name, icon `inv_enchant_essencemysticalsmall`, single-target, 28% base mana, periodic-heal base points, 3s duration |
-| `400735` Temporal Beacon | a single-target HoT | name, icon `spell_nature_timestop`, 30s duration, ~8/1s periodic-heal base points, Magic dispel |
-| `900001` Chronomantic Heal | a simple instant heal | name, instant/no-GCD, base points supplied at cast time |
-
-`900002` (caster conversion proc) is **server-side only** — it goes in the SQL
-but **not** the client DBC/MPQ (hidden passive, no icon/tooltip needed).
+Spells live in the `SPELLS` list and custom items in the `ITEMS` list at the top
+of `build_sod_mage_patch.py`. Player-facing spells (`401417` Regeneration,
+`412510` Mass Regeneration, `400735` Temporal Beacon, `401405` Chronomantic
+Healing) get a client `Spell.dbc` row; the hidden conversion proc (`900001`) is
+**server-only** (SQL, no client DBC). The three custom items (`700200` charm,
+`700201`/`700202` notes) get `Item.dbc` rows. See
+[../docs/spell-generator.md](../docs/spell-generator.md) for the full spec keys
+and [../docs/adding-a-spell.md](../docs/adding-a-spell.md) for the workflow.
 
 > Built and validated against the real client DBCs, not blind — expect a couple
 > of iterations confirming cast time / range / duration in-game.
