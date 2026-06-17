@@ -42,17 +42,26 @@ You need both halves. Server first, then the client patch.
    ```bash
    mysql -u <user> -p acore_world < modules/mod-sod-mage/data/sql/db-world/base/sod_mage_spell_dbc.sql
    mysql -u <user> -p acore_world < modules/mod-sod-mage/data/sql/db-world/base/sod_mage_runes.sql
+   mysql -u <user> -p acore_world < modules/mod-sod-mage/data/sql/db-world/base/sod_mage_quest_runes.sql
+   mysql -u <user> -p acore_world < modules/mod-sod-mage/data/sql/db-world/base/sod_mage_regeneration_unlock.sql
    ```
    (Idempotent — safe to re-run. `sod_mage_spell_dbc.sql` seeds `spell_dbc`,
    `spell_script_names`, `spell_proc`. `sod_mage_runes.sql` registers the spells
    as engravable runes and is a **no-op unless** the optional rune engine is
-   installed — see below.)
+   installed. `sod_mage_quest_runes.sql` adds a quest-gated rune and its mage
+   quest. `sod_mage_regeneration_unlock.sql` adds the SoD item chain that unlocks
+   the Regeneration rune (items/loot/vendor work standalone; only the rune
+   mapping is engine-guarded). See below.)
 4. Restart the worldserver (these tables load at startup).
 
-### Client patch (required — otherwise the spells won't render)
+### Client patch (required — otherwise spells won't render and custom items show a "?" icon)
 
 The spells use IDs the stock client doesn't have, so the client needs a patch MPQ.
-Generate it against your own client (it reuses stock icons/visuals — no custom art):
+The same patch also adds the module's **custom items** to the client's `Item.dbc`:
+an item's name/tooltip come from the server, but its **bag inventory icon** is
+resolved client-side from `Item.dbc` (itemId → display), so without this row the
+items (Comprehension Charm, the Spell Notes) show a red "?" icon in bags. Generate
+it against your own client (it reuses stock icons/visuals — no custom art):
 
 ```bash
 pip install pympq                       # StormLib binding for MPQ read/write
@@ -79,10 +88,24 @@ This module's spells can also be acquired as **engravable runes** if the reusabl
 [`mod-rune-engraving`](../mod-rune-engraving) engine is installed alongside it.
 `sod_mage_runes.sql` writes this module's runes into the engine's catalog,
 guarded so it's a harmless no-op when the engine is absent — `mod-sod-mage`
-installs and works fine on its own (spells via `.learn`). With the engine
-present, a Mage can engrave **Regeneration** at the Rune Engraver NPC.
+installs and works fine on its own (spells via `.learn`).
 
-This module owns the rune-id band **7000000–7000999** in the engine's catalog.
+With the engine present, the two runes demonstrate both of the engine's
+**earned-rune** paths:
+
+- **Regeneration** (Chest slot) is **item-unlocked** via the faithful SoD chain
+  (`sod_mage_regeneration_unlock.sql`): buy a **Comprehension Charm** from any
+  reagent vendor, kill **Defias Pillager / Defias Renegade Mage / Dalaran
+  Apprentice** for **Spell Notes: TENGI RONEERA**, use them with the charm to make
+  **Spell Notes: Regeneration**, then use those to unlock the rune. Without the
+  engine the items/combine still exist but the final unlock no-ops.
+- **Mass Regeneration** (Legs slot) is **quest-gated** (`sod_mage_quest_runes.sql`):
+  complete **Echoes of Renewal** (from *Magister Tessaril* in Stormwind). Without
+  the engine the quest still works as an ordinary minor mage quest.
+
+This module owns these ID bands: rune ids **7000000–7000999** in the engine's
+catalog, creature/quest ids **700100–700199** (spawn guids **8810000+**), and
+item ids **700200–700299**.
 
 ## Documentation
 

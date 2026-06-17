@@ -10,6 +10,14 @@ is valid), apply our overrides, and emit BOTH:
     `skill_line` land under the right spellbook tab (client-side grouping), and
   * a spell_dbc INSERT (named columns) for the server.
 
+The same MPQ also carries a patched Item.dbc with rows for this module's custom
+items (see ITEMS). A custom item's name/tooltip come from the server, but its
+inventory icon is resolved client-side via Item.dbc (itemId -> DisplayInfoID);
+without that row the item shows the red "?" icon in bags (the vendor frame is
+unaffected, as the vendor packet carries the displayid directly). The item_template
+rows themselves stay hand-written in sod_mage_regeneration_unlock.sql — keep ITEMS
+in sync with them.
+
 Index/icon values are resolved at runtime from the client's own DBCs, so the
 output is correct for whatever client it is pointed at. Requires `pympq`
 (StormLib binding) for MPQ read/write.
@@ -42,6 +50,27 @@ PATCH_MPQ_NAME = "patch-enus-z.mpq"  # highest-priority locale patch letter
 
 INNER = "DBFilesClient\\Spell.dbc"
 SKILL_INNER = "DBFilesClient\\SkillLineAbility.dbc"
+ITEM_INNER = "DBFilesClient\\Item.dbc"
+
+# ---------------------------------------------------------------------------
+# Custom items needing a client Item.dbc row so their bag icon resolves. These
+# MUST mirror the item_template rows in
+# data/sql/db-world/base/sod_mage_regeneration_unlock.sql (class/subclass/
+# Material/displayid/InventoryType/sheath). Item.dbc fields are:
+#   ID, ClassID, SubclassID, SoundOverrideSubclassID(-1), Material,
+#   DisplayInfoID, InventoryType, SheatheType.
+# ---------------------------------------------------------------------------
+ITEMS = [
+    {"id": 700200, "name": "Comprehension Charm",
+     "class": 15, "subclass": 1, "material": 1, "display": 31029,
+     "invtype": 0, "sheath": 0},
+    {"id": 700201, "name": "Spell Notes: TENGI RONEERA",
+     "class": 15, "subclass": 0, "material": 1, "display": 1102,
+     "invtype": 0, "sheath": 0},
+    {"id": 700202, "name": "Spell Notes: Regeneration",
+     "class": 15, "subclass": 0, "material": 1, "display": 1102,
+     "invtype": 0, "sheath": 0},
+]
 
 # ---------------------------------------------------------------------------
 # Enum values (from core SharedDefines.h / SpellAuraDefines.h).
@@ -415,7 +444,7 @@ def extract_client_dbcs(client_dir, dest):
     used = {}
     for dbc in ("Spell.dbc", "SpellCastTimes.dbc", "SpellDuration.dbc",
                 "SpellRange.dbc", "SpellRadius.dbc", "SpellIcon.dbc",
-                "SkillLineAbility.dbc"):
+                "SkillLineAbility.dbc", "Item.dbc"):
         used[dbc] = extract(dbc)
     return used
 
@@ -449,6 +478,42 @@ def build_skill_line_ability(workdir, spells):
     out = os.path.join(workdir, "SkillLineAbility.dbc.patched")
     with open(out, "wb") as fh:
         fh.write(sla.serialize())
+    return out
+
+
+def build_item_dbc(workdir, items):
+    """Append Item.dbc rows so the client can resolve each custom item's
+    inventory icon (itemId -> DisplayInfoID). Without a client Item.dbc entry a
+    custom item shows the red "?" icon in bags (the vendor frame is unaffected —
+    the vendor packet carries the displayid directly). The full (base + appended)
+    file is packed into the patch MPQ, overriding the client's copy. Returns the
+    patched file path, or None if there are no items.
+    """
+    if not items:
+        return None
+
+    item = WDBC.load(os.path.join(workdir, "Item.dbc"))
+    existing = {item.get_int(r, 0) for r in item.records}
+    for it in items:
+        if it["id"] in existing:
+            rec = item.find(it["id"])      # re-runnable: update in place
+        else:
+            rec = bytearray(item.recsize)
+            item.records.append(rec)
+        item.set_int(rec, 0, it["id"])
+        item.set_int(rec, 1, it["class"])
+        item.set_int(rec, 2, it["subclass"])
+        item.set_int(rec, 3, -1)           # SoundOverrideSubclassID
+        item.set_int(rec, 4, it["material"])
+        item.set_int(rec, 5, it["display"])
+        item.set_int(rec, 6, it["invtype"])
+        item.set_int(rec, 7, it["sheath"])
+        print("[*] Item.dbc row added: %d (%s) -> display %d"
+              % (it["id"], it["name"], it["display"]))
+
+    out = os.path.join(workdir, "Item.dbc.patched")
+    with open(out, "wb") as fh:
+        fh.write(item.serialize())
     return out
 
 
@@ -606,6 +671,9 @@ def main():
     # --- build patched client SkillLineAbility.dbc (spellbook tab grouping) ---
     sla_patched = build_skill_line_ability(args.workdir, spells)
 
+    # --- build patched client Item.dbc (custom-item bag icons) ---
+    item_patched = build_item_dbc(args.workdir, ITEMS)
+
     # --- emit SQL ---
     os.makedirs(os.path.dirname(SQL_OUT), exist_ok=True)
     with open(SQL_OUT, "w", encoding="utf-8", newline="\n") as fh:
@@ -620,6 +688,8 @@ def main():
     files = [(patched, INNER)]
     if sla_patched:
         files.append((sla_patched, SKILL_INNER))
+    if item_patched:
+        files.append((item_patched, ITEM_INNER))
     pack_mpq(files, out_mpq)
     print("[*] wrote client patch -> %s (%d DBC file(s))" % (out_mpq, len(files)))
 

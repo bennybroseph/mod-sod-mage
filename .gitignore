@@ -4,6 +4,10 @@ conf/*.conf
 # MPQ generator scratch (extracted client DBCs, patched output)
 tools/_work/
 
+# Python bytecode (from the MPQ generator / tooling)
+__pycache__/
+*.pyc
+
 # Test run log (tee'd by tests/run-in-docker.sh)
 tests/_lastrun.log
 
