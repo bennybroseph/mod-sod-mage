@@ -93,7 +93,7 @@ jobs:
           }
 
           emit_section "Guide"     architecture adding-a-spell deploy-and-verify
-          emit_section "Reference" spell-generator spells healer-kit-reference pulling-sod-data gotchas
+          emit_section "Reference" spell-generator spells healer-kit-reference pulling-sod-data gotchas testing
 
           # Catch-all: any doc not placed under a heading above.
           others=()

@@ -16,6 +16,7 @@
  */
 
 #include "spell_sod_mage.h"
+#include "spell_sod_mage_rules.h"
 #include "ObjectAccessor.h"
 #include "SpellDefines.h"
 #include "SpellInfo.h"
@@ -200,16 +201,16 @@ class spell_sod_mage_temporal_conversion : public AuraScript
 
         uint32 conversionPct =
             sConfigMgr->GetOption<uint32>("SodMage.TemporalBeacon.ConversionPct", 70);
-        int32 heal = CalculatePct(static_cast<int32>(damageInfo->GetDamage()), conversionPct);
 
         // Multi-target Arcane spells contribute much less per beacon.
-        if (SpellInfo const* procSpell = eventInfo.GetSpellInfo())
-            if (procSpell->IsTargetingArea())
-            {
-                uint32 multiPct =
-                    sConfigMgr->GetOption<uint32>("SodMage.TemporalBeacon.MultiTargetPct", 20);
-                heal = CalculatePct(heal, multiPct);
-            }
+        SpellInfo const* procSpell = eventInfo.GetSpellInfo();
+        bool multiTarget = procSpell && procSpell->IsTargetingArea();
+        uint32 multiPct =
+            sConfigMgr->GetOption<uint32>("SodMage.TemporalBeacon.MultiTargetPct", 20);
+
+        int32 heal = SodMageRules::BeaconHeal(
+            static_cast<int32>(damageInfo->GetDamage()), conversionPct,
+            multiTarget, multiPct);
 
         if (heal <= 0)
             return;
@@ -229,7 +230,7 @@ class spell_sod_mage_temporal_conversion : public AuraScript
             if (!beaconTarget->HasAura(SPELL_SOD_MAGE_TEMPORAL_BEACON, caster->GetGUID()))
                 continue;
 
-            int32 amount = (beaconTarget == caster) ? CalculatePct(heal, selfPct) : heal;
+            int32 amount = (beaconTarget == caster) ? SodMageRules::BeaconSelfHeal(heal, selfPct) : heal;
             if (amount <= 0)
                 continue;
 
