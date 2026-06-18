@@ -100,7 +100,9 @@ inventory icon** is resolved client-side from the client's own `Item.dbc`
 `Item.dbc` shows the red "?" icon in bags. The **vendor** frame is unaffected — the
 vendor packet carries the displayid directly — which is the tell: vendor OK, bag
 "?". Clearing the `Cache`/`WDB` folder does **not** fix it (the icon never came from
-that cache). The fix is a client `Item.dbc` row per custom item, shipped in the
-patch MPQ — the [generator](spell-generator.md)'s `ITEMS` list does this; regenerate
-and reinstall the patch. Reuse an existing `DisplayInfoID` (find one by its
-`InventoryIcon` in `ItemDisplayInfo.dbc`) so no new art is needed.
+that cache). The fix is a client `Item.dbc` row per custom item. Those rows ship in
+the **shared item patch built by `mod-sod-world`** (one consolidated `Item.dbc` for
+all SoD modules — WoW replaces whole DBCs per patch); this module lists its items in
+`tools/client_items.json`. Regenerate and reinstall that patch. Reuse an existing
+`DisplayInfoID` (find one by its `InventoryIcon` in `ItemDisplayInfo.dbc`) so no new
+art is needed.

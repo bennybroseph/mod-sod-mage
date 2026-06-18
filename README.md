@@ -42,26 +42,23 @@ You need both halves. Server first, then the client patch.
    ```bash
    mysql -u <user> -p acore_world < modules/mod-sod-mage/data/sql/db-world/base/sod_mage_spell_dbc.sql
    mysql -u <user> -p acore_world < modules/mod-sod-mage/data/sql/db-world/base/sod_mage_runes.sql
-   mysql -u <user> -p acore_world < modules/mod-sod-mage/data/sql/db-world/base/sod_mage_quest_runes.sql
+   mysql -u <user> -p acore_world < modules/mod-sod-mage/data/sql/db-world/base/sod_mage_mass_regeneration.sql
    mysql -u <user> -p acore_world < modules/mod-sod-mage/data/sql/db-world/base/sod_mage_regeneration_unlock.sql
    ```
    (Idempotent — safe to re-run. `sod_mage_spell_dbc.sql` seeds `spell_dbc`,
    `spell_script_names`, `spell_proc`. `sod_mage_runes.sql` registers the spells
    as engravable runes and is a **no-op unless** the optional rune engine is
-   installed. `sod_mage_quest_runes.sql` adds a quest-gated rune and its mage
-   quest. `sod_mage_regeneration_unlock.sql` adds the SoD item chain that unlocks
-   the Regeneration rune (items/loot/vendor work standalone; only the rune
-   mapping is engine-guarded). See below.)
+   installed. `sod_mage_mass_regeneration.sql` and `sod_mage_regeneration_unlock.sql`
+   add the two SoD rune-unlock chains (items/loot work standalone; only the rune
+   mappings are engine-guarded). The Mass Regeneration chain also needs the shared
+   [`mod-sod-world`](../mod-sod-world) module, which provides the Awakened Lich
+   encounter — see below.)
 4. Restart the worldserver (these tables load at startup).
 
-### Client patch (required — otherwise spells won't render and custom items show a "?" icon)
+### Client patch (required — otherwise the spells won't render)
 
 The spells use IDs the stock client doesn't have, so the client needs a patch MPQ.
-The same patch also adds the module's **custom items** to the client's `Item.dbc`:
-an item's name/tooltip come from the server, but its **bag inventory icon** is
-resolved client-side from `Item.dbc` (itemId → display), so without this row the
-items (Comprehension Charm, the Spell Notes) show a red "?" icon in bags. Generate
-it against your own client (it reuses stock icons/visuals — no custom art):
+Generate it against your own client (it reuses stock icons/visuals — no custom art):
 
 ```bash
 pip install pympq                       # StormLib binding for MPQ read/write
@@ -69,9 +66,17 @@ pip install pympq                       # StormLib binding for MPQ read/write
 python modules/mod-sod-mage/tools/build_sod_mage_patch.py --client "<path to your WoW 3.3.5a client>"
 ```
 
-This writes a patch into the client's `Data/` folder and (re)writes the server SQL.
-It currently assumes an **enUS** client and ships the patch as `patch-enus-z.mpq`;
-adjust for other locales. Launch the client after generating.
+This writes `patch-enus-z.mpq` (spell DBCs) into the client's `Data/enus` folder
+and (re)writes the server spell SQL. It assumes an **enUS** client; adjust for
+other locales.
+
+The module's **custom items** (Comprehension Charm, the Spell Notes) also need a
+client `Item.dbc` row, or they show a red "?" icon in bags. That row ships in the
+**shared item patch built by [`mod-sod-world`](../mod-sod-world)** — one
+consolidated `Item.dbc` for all SoD modules (WoW replaces whole DBCs per patch, so
+the rows can't be split across MPQs). Run that module's
+`tools/build_sod_world_patch.py` too; this module contributes its items via
+`tools/client_items.json`. Launch the client after generating both patches.
 
 ### Use it
 
@@ -99,13 +104,16 @@ With the engine present, the two runes demonstrate both of the engine's
   Apprentice** for **Spell Notes: TENGI RONEERA**, use them with the charm to make
   **Spell Notes: Regeneration**, then use those to unlock the rune. Without the
   engine the items/combine still exist but the final unlock no-ops.
-- **Mass Regeneration** (Legs slot) is **quest-gated** (`sod_mage_quest_runes.sql`):
-  complete **Echoes of Renewal** (from *Magister Tessaril* in Stormwind). Without
-  the engine the quest still works as an ordinary minor mage quest.
+- **Mass Regeneration** (Legs slot) is **drop-gated**
+  (`sod_mage_mass_regeneration.sql`), faithful to SoD: kill the **Awakened Lich**
+  in Raven Hill for **Spell Notes: Mass Regeneration**, then use them to unlock the
+  rune. The Lich encounter (Dusty Coffer → Decrepit Phylactery → summon) is shared
+  content provided by [`mod-sod-world`](../mod-sod-world).
 
-This module owns these ID bands: rune ids **7000000–7000999** in the engine's
-catalog, creature/quest ids **700100–700199** (spawn guids **8810000+**), and
-item ids **700200–700299**.
+This module owns the rune-id band **7000000–7000999** in the engine's catalog.
+Its items and the Lich drop use the **real SoD ids** (Comprehension Charm
+`211779`, the Spell Notes `208754`/`208753`/`211514`); the Awakened Lich
+(`212261`) is owned by [`mod-sod-world`](../mod-sod-world).
 
 ## Documentation
 

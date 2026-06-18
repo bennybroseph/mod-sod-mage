@@ -7,8 +7,9 @@ Reference for the spells implemented so far. IDs and mechanics are defined in
 **Acquisition:** by default these are GM-`.learn`-only. With the optional
 [`mod-rune-engraving`](../../mod-rune-engraving) engine installed, **Regeneration**
 and **Mass Regeneration** are also acquirable as **engravable runes** — Regeneration
-via the SoD item chain (Comprehension Charm + Spell Notes), Mass Regeneration via a
-quest. See the [README](../README.md) for the player-facing flow.
+via the SoD item chain (Comprehension Charm + Spell Notes), Mass Regeneration via the
+Awakened Lich drop (the shared `mod-sod-world` encounter). See the
+[README](../README.md) for the player-facing flow.
 
 ## Regeneration — `401417`
 

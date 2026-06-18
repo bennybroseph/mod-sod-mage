@@ -17,8 +17,8 @@ is only for keeping the DB row byte-identical to the file.
 
 ² A custom item's name/stats/tooltip come from the server, but its **bag inventory
 icon** is resolved client-side from `Item.dbc`. New/changed custom items need the
-patch MPQ regenerated (it carries `Item.dbc`), or they show a red "?" in bags. See
-[Gotchas](gotchas.md).
+shared `mod-sod-world` item patch regenerated (it carries the consolidated
+`Item.dbc`), or they show a red "?" in bags. See [Gotchas](gotchas.md).
 
 ## 1. Regenerate artifacts
 
@@ -38,9 +38,11 @@ mysql -u <user> -p acore_world < modules/mod-sod-mage/data/sql/db-world/base/sod
 The module ships more base SQL than just the spells — apply all of
 `data/sql/db-world/base/` to `acore_world`: `sod_mage_spell_dbc.sql`,
 `sod_mage_module_string.sql`, `sod_mage_runes.sql` (rune catalog), and the gated
-runes `sod_mage_quest_runes.sql` (quest) + `sod_mage_regeneration_unlock.sql`
-(item chain). The rune files are **engine-guarded** — a clean no-op without
-`mod-rune-engraving`. See the [README](../README.md) for the full list.
+runes `sod_mage_mass_regeneration.sql` (Awakened Lich drop) +
+`sod_mage_regeneration_unlock.sql` (item chain). The rune files are
+**engine-guarded** — a clean no-op without `mod-rune-engraving`. The Mass
+Regeneration drop also needs the shared `mod-sod-world` module (the Lich
+encounter). See the [README](../README.md) for the full list.
 
 For a Dockerized server, run it through the DB container instead (adjust names/creds
 to your setup), e.g.:

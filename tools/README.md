@@ -19,7 +19,7 @@ loads), so every index is correct and identical on both sides.
 
 1. **Extract** from the client MPQs (respecting MPQ patch priority): `Spell.dbc`,
    the index DBCs `SpellCastTimes`/`SpellDuration`/`SpellRange`/`SpellRadius`/
-   `SpellIcon`, plus `SkillLineAbility.dbc` and `Item.dbc`.
+   `SpellIcon`, plus `SkillLineAbility.dbc`.
 2. **Clone + override** (pure-Python WDBC reader/writer, no deps): for each new
    spell, clone a real template record (so all index fields are valid), then
    override only what changes. Resolve desired duration/range/cast-time by
@@ -30,26 +30,26 @@ loads), so every index is correct and identical on both sides.
    this the scripts never run), and `spell_proc` (the conversion proc).
 4. **Patch `SkillLineAbility.dbc`** so a spell flagged with a `skill_line` lands
    under the right spellbook tab (client-side grouping; e.g. Arcane = 237).
-5. **Patch `Item.dbc`** with a row per custom item (the `ITEMS` list) so each
-   resolves its **bag inventory icon** (itemId → DisplayInfoID). A custom item's
-   name/stats come from the server, but the bag icon is client-side — without an
-   `Item.dbc` row the item shows a red "?" in bags (the vendor frame is fine, as
-   the vendor packet carries the displayid). `ITEMS` must mirror the
-   `item_template` rows in `sod_mage_regeneration_unlock.sql`.
-6. **Repack** the three patched DBCs into the client patch (`patch-enus-z.mpq`)
-   via StormLib (the `pympq` binding) and drop it in the client locale `Data/`
-   folder. (Implemented — no external MPQ tool needed.)
+5. **Repack** the two patched DBCs (`Spell.dbc`, `SkillLineAbility.dbc`) into the
+   client patch (`patch-enus-z.mpq`) via StormLib (the `pympq` binding) and drop
+   it in the client locale `Data/` folder. (Implemented — no external MPQ tool
+   needed.)
+
+Custom-item **bag icons** are NOT built here. WoW replaces whole DBCs per patch,
+so every SoD module's `Item.dbc` rows must share one file; that consolidated patch
+is owned by [`mod-sod-world`](../../mod-sod-world). This module lists its items in
+`tools/client_items.json`, which that tool aggregates.
 
 ## Specs (single source of truth)
 
-Spells live in the `SPELLS` list and custom items in the `ITEMS` list at the top
-of `build_sod_mage_patch.py`. Player-facing spells (`401417` Regeneration,
-`412510` Mass Regeneration, `400735` Temporal Beacon, `401405` Chronomantic
-Healing) get a client `Spell.dbc` row; the hidden conversion proc (`900001`) is
-**server-only** (SQL, no client DBC). The three custom items (`700200` charm,
-`700201`/`700202` notes) get `Item.dbc` rows. See
-[../docs/spell-generator.md](../docs/spell-generator.md) for the full spec keys
-and [../docs/adding-a-spell.md](../docs/adding-a-spell.md) for the workflow.
+Spells live in the `SPELLS` list at the top of `build_sod_mage_patch.py`.
+Player-facing spells (`401417` Regeneration, `412510` Mass Regeneration, `400735`
+Temporal Beacon, `401405` Chronomantic Healing) get a client `Spell.dbc` row; the
+hidden conversion proc (`900001`) is **server-only** (SQL, no client DBC). Custom
+item rows live in `tools/client_items.json` (consumed by `mod-sod-world`'s patch
+builder). See [../docs/spell-generator.md](../docs/spell-generator.md) for the
+full spec keys and [../docs/adding-a-spell.md](../docs/adding-a-spell.md) for the
+workflow.
 
 > Built and validated against the real client DBCs, not blind — expect a couple
 > of iterations confirming cast time / range / duration in-game.

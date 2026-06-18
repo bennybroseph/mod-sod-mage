@@ -1,0 +1,42 @@
+[
+  {
+    "id": 211779,
+    "name": "Comprehension Charm",
+    "class": 15,
+    "subclass": 1,
+    "material": 1,
+    "display": 31029,
+    "invtype": 0,
+    "sheath": 0
+  },
+  {
+    "id": 208754,
+    "name": "Spell Notes: TENGI RONEERA",
+    "class": 15,
+    "subclass": 0,
+    "material": 1,
+    "display": 1102,
+    "invtype": 0,
+    "sheath": 0
+  },
+  {
+    "id": 208753,
+    "name": "Spell Notes: Regeneration",
+    "class": 15,
+    "subclass": 0,
+    "material": 1,
+    "display": 1102,
+    "invtype": 0,
+    "sheath": 0
+  },
+  {
+    "id": 211514,
+    "name": "Spell Notes: Mass Regeneration",
+    "class": 15,
+    "subclass": 0,
+    "material": 1,
+    "display": 1102,
+    "invtype": 0,
+    "sheath": 0
+  }
+]

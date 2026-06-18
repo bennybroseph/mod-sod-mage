@@ -37,10 +37,11 @@ row gives the client its name, stats, and tooltip via the item-query response, s
 **no** client patch is needed for those. The one exception is the **bag inventory
 icon**, which the client resolves from its own `Item.dbc` (itemId → `DisplayInfoID`
 → icon). A custom item id absent from `Item.dbc` shows a red "?" in bags (the
-vendor frame is fine — the vendor packet carries the displayid). So the same patch
-MPQ also carries an `Item.dbc` with a row per custom item; reuse an existing
-`DisplayInfoID` (no new art). See [Gotchas](gotchas.md) and the
-[generator](spell-generator.md)'s `ITEMS` list.
+vendor frame is fine — the vendor packet carries the displayid). Those `Item.dbc`
+rows ship in a **shared item patch built by `mod-sod-world`** (one consolidated
+`Item.dbc` for all SoD modules); this module declares its items in
+`tools/client_items.json`, reusing an existing `DisplayInfoID` (no new art). See
+[Gotchas](gotchas.md).
 
 ## Spell ID allocation
 

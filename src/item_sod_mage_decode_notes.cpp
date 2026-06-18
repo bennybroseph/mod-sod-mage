@@ -23,16 +23,16 @@
 #include "Spell.h"
 
 // The "combine" step of the SoD Regeneration chain: use the scrambled
-// Spell Notes: TENGI RONEERA (700201) while holding a Comprehension Charm
-// (700200) to produce the deciphered Spell Notes: Regeneration (700202). Both
+// Spell Notes: TENGI RONEERA (208754) while holding a Comprehension Charm
+// (211779) to produce the deciphered Spell Notes: Regeneration (208753). Both
 // the charm and the scrambled note are consumed (SoD charms stack to 5 / are
 // conjured in 5s -- one per decode). Pure inventory logic -- no rune-engine
 // call -- so mod-sod-mage stays usable without the engine installed.
 enum SodMageDecodeItems
 {
-    ITEM_SOD_MAGE_CHARM            = 700200,
-    ITEM_SOD_MAGE_NOTES_SCRAMBLED  = 700201,
-    ITEM_SOD_MAGE_NOTES_DECIPHERED = 700202,
+    ITEM_SOD_MAGE_CHARM            = 211779, // real SoD item ids (wago.tools)
+    ITEM_SOD_MAGE_NOTES_SCRAMBLED  = 208754,
+    ITEM_SOD_MAGE_NOTES_DECIPHERED = 208753,
 };
 
 class item_sod_mage_decode_notes : public ItemScript
