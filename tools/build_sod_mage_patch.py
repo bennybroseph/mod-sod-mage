@@ -108,6 +108,9 @@ class WDBC:
     def set_int(self, rec, field, value):
         struct.pack_into("<i", rec, field * 4, int(value))
 
+    def set_float(self, rec, field, value):
+        struct.pack_into("<f", rec, field * 4, float(value))
+
     def add_string(self, text):
         """Append a string, return its offset within the string block."""
         offset = len(self.strings)
@@ -170,6 +173,35 @@ def load_columns(table_sql_path):
 # `overrides` keys are spell_dbc column names. `client` controls whether the
 # spell goes into the client DBC/MPQ (server-only spells are SQL only).
 # ---------------------------------------------------------------------------
+# ---------------------------------------------------------------------------
+# Per-level SoD value curves (the tooltip's $<power>). These mirror the C++
+# SodMageRules curves; the SERVER computes the exact (quadratic) value in script.
+# For the CLIENT tooltip — which can only scale linearly (EffectRealPointsPerLevel)
+# — we fit a line through the curve at two levels (`lo`..`hi`): exact at both ends,
+# scaling between, clamped flat below `lo`. The actual (quadratic) value is exact
+# at every level; the linear tooltip is only an approximation between the anchors.
+# These linear values are written to the client DBC ONLY (client_overrides), never
+# to the server spell_dbc, so the server stays purely script-driven.
+# ---------------------------------------------------------------------------
+def living_flame_tick(level):
+    return 13.828124 + 0.018012 * level + 0.044141 * level * level
+
+
+def regen_tick(level):
+    power = 38.258376 + 0.904195 * level + 0.161311 * level * level
+    return power * 55.0 / 100.0
+
+
+def tooltip_fit(curve, lo=60, hi=80):
+    """Linear fit of `curve` exact at `lo` and `hi`. Returns client DBC fields:
+    int EffectBasePoints_1 / BaseLevel / MaxLevel and float EffectRealPointsPerLevel_1."""
+    base = round(curve(lo))
+    rpl = (curve(hi) - curve(lo)) / (hi - lo)
+    ints = {"EffectBasePoints_1": base, "BaseLevel": lo, "MaxLevel": hi}
+    floats = {"EffectRealPointsPerLevel_1": rpl}
+    return ints, floats
+
+
 def build_spells(idx):
     """idx: resolver giving runtime DBC index/icon values."""
     cast_3s = idx["cast"][3000]
@@ -191,18 +223,27 @@ def build_spells(idx):
     icon_regen_large = idx["icon"]["inv_enchant_essencemysticallarge"]
     icon_living_flame = idx["icon"]["spell_fire_masterofelements"]
 
+    # Client-only tooltip scaling: a linear fit of the SoD curve over the full
+    # server level range 1..80 (exact at levels 1 and 80, scaling the whole way).
+    # The actual values stay the exact quadratic curve (computed in script); this
+    # only feeds the client tooltip, which can't render the quadratic — so it reads
+    # high mid-range. `lo`/`hi` tune the fit anchors.
+    regen_tip_int, regen_tip_flt = tooltip_fit(regen_tick, lo=1, hi=80)
+    flame_tip_int, flame_tip_flt = tooltip_fit(living_flame_tick, lo=1, hi=80)
+
     return [
         {  # 401417 Regeneration: channeled 3s single-target HoT. A channel uses
            # an instant CastingTimeIndex; its length comes from the duration.
             "id": 401417, "client": True, "template": 139,  # clone Renew
             "skill_line": SKILL_ARCANE,  # spellbook tab: Arcane
             "name": "Regeneration", "script": "spell_sod_mage_regeneration",
-            # Static wording: the 3.3.5a client can't resolve a server-side
-            # coefficient (no $<healpower> engine, no client coeff override), so a
-            # dynamic token would under-report. State the SoD value plainly instead.
-            "desc": "Heals the target for about 1110 health over 3 sec (at level "
-                    "60; scales with your level and healing power) and applies "
+            # Dynamic tooltip: $o1 = the periodic heal total, which the client
+            # computes per the player's level from the client-only linear fit below
+            # (the server applies the exact SoD curve in script). $d = 3s duration.
+            "desc": "Heals the target for $o1 health over $d sec and applies "
                     "Temporal Beacon for 30 sec.",
+            "client_overrides": dict(regen_tip_int),
+            "client_overrides_float": dict(regen_tip_flt),
             # SoD: heals 165% of healing power over 3 ticks, no flat base. We model
             # that with a 0.55/tick spellpower coefficient (spell_bonus_data) and a
             # zero base. SpellLevel 0 avoids AzerothCore's low-level coefficient penalty.
@@ -229,9 +270,10 @@ def build_spells(idx):
             "id": 412510, "client": True, "template": 139,  # clone Renew
             "skill_line": SKILL_ARCANE,  # spellbook tab: Arcane
             "name": "Mass Regeneration", "script": "spell_sod_mage_mass_regeneration",
-            "desc": "Heals the target and their party members for about 1110 health "
-                    "over 3 sec (at level 60; scales with your level and healing "
-                    "power) and applies Temporal Beacon to each for 15 sec.",
+            "desc": "Heals the target and their party members for $o1 health over "
+                    "$d sec and applies Temporal Beacon to each for 15 sec.",
+            "client_overrides": dict(regen_tip_int),
+            "client_overrides_float": dict(regen_tip_flt),
             "bonus": {"direct": 0.0, "dot": 0.55, "ap": 0.0, "ap_dot": 0.0},
             "overrides": {
                 "Attributes": 0, "AttributesEx": SPELL_ATTR1_IS_CHANNELED,
@@ -340,10 +382,12 @@ def build_spells(idx):
             "id": 401556, "client": True, "template": 2136,  # clone Fire Blast
             "skill_line": SKILL_FIRE,  # spellbook tab: Fire
             "name": "Living Flame", "script": "spell_sod_mage_living_flame",
+            # $401558s1 cross-references the trail spell's per-second damage, which
+            # the client computes per the player's level from 401558's client-only
+            # linear fit below (server applies the exact SoD curve in script).
             "desc": "Summons a spellfire flame that creeps toward the target, "
-                    "dealing about 174 Spellfire (Fire and Arcane) damage each "
-                    "second to nearby enemies (at level 60; scales with your level "
-                    "and spell power). Lasts 10 sec.",
+                    "dealing $401558s1 Spellfire (Fire and Arcane) damage each "
+                    "second to nearby enemies. Lasts 10 sec.",
             "overrides": {
                 "Attributes": 0, "AttributesEx": 0,
                 "CastingTimeIndex": cast_instant, "DurationIndex": 0,
@@ -374,6 +418,10 @@ def build_spells(idx):
             "name": "Living Flame",
             "script": "spell_sod_mage_living_flame_damage",
             "bonus": {"direct": 1.0, "dot": 0.0, "ap": 0.0, "ap_dot": 0.0},
+            # Client-only level fit so $401558s1 (referenced by 401556's tooltip)
+            # scales with the player's level; server damage is the script's curve.
+            "client_overrides": dict(flame_tip_int),
+            "client_overrides_float": dict(flame_tip_flt),
             "overrides": {
                 "Attributes": 0, "AttributesEx": 0,
                 "CastingTimeIndex": cast_instant, "DurationIndex": 0,
@@ -668,6 +716,13 @@ def main():
         base = bytearray(spell.find(s["template"]))
         for col, val in s["overrides"].items():
             spell.set_int(base, field_of[col], val)
+        # Client-only fields (tooltip level-scaling): written to the client DBC so
+        # the client can render a dynamic tooltip, but kept out of the server SQL
+        # row (emit_sql ignores these) so server behavior stays script-driven.
+        for col, val in s.get("client_overrides", {}).items():
+            spell.set_int(base, field_of[col], val)
+        for col, val in s.get("client_overrides_float", {}).items():
+            spell.set_float(base, field_of[col], val)
         spell.set_int(base, field_of["ID"], s["id"])
         spell.set_int(base, field_of["Name_Lang_enUS"], spell.add_string(s["name"]))
         spell.set_int(base, field_of["Name_Lang_Mask"], NAME_MASK)

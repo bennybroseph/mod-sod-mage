@@ -65,12 +65,14 @@ class spell_sod_mage_regeneration : public AuraScript
         ApplyTemporalBeacon(caster, target, SOD_MAGE_BEACON_MS_REGEN);
     }
 
-    // Per-tick heal from the SoD level curve (so it heals with no gear); healing
-    // power adds on top via spell_bonus_data.
+    // Add the SoD level-curve base to the per-tick heal (so it heals with no
+    // gear). `amount` already holds the healing-power bonus the engine folded in
+    // (CalculateAmount applies it *before* this hook), so we ADD — replacing it
+    // would discard the caster's healing power.
     void CalcHeal(AuraEffect const* /*aurEff*/, int32& amount, bool& /*canBeRecalculated*/)
     {
         if (Unit* caster = GetCaster())
-            amount = SodMageRules::RegenTickHeal(caster->GetLevel());
+            amount += SodMageRules::RegenTickHeal(caster->GetLevel());
     }
 
     void Register() override
@@ -107,10 +109,11 @@ class spell_sod_mage_mass_regeneration : public AuraScript
     }
 
     // Same level-curve per-tick heal as Regeneration (both heal 165% over 3 sec).
+    // ADD (not replace) so the engine's already-applied healing-power bonus stays.
     void CalcHeal(AuraEffect const* /*aurEff*/, int32& amount, bool& /*canBeRecalculated*/)
     {
         if (Unit* caster = GetCaster())
-            amount = SodMageRules::RegenTickHeal(caster->GetLevel());
+            amount += SodMageRules::RegenTickHeal(caster->GetLevel());
     }
 
     void Register() override

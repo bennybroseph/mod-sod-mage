@@ -23,9 +23,10 @@ A channeled heal-over-time that also stamps Temporal Beacon.
 - **Visual:** reuses Drain Mana's beam (`SpellVisualID 12657`) — a blue
   caster↔target channel tether. (There's no purple smooth beam in the client; see
   [Gotchas](gotchas.md).)
-- **Tooltip:** `Heals the target for an amount equal to 165% of your healing power
-  over 3 sec and applies Temporal Beacon for 30 sec.` — static wording, since the
-  3.3.5a client can't show a server-side coefficient ([Gotchas](gotchas.md)).
+- **Tooltip:** `Heals the target for $o1 health over $d sec and applies Temporal
+  Beacon for 30 sec.` — **dynamic**: the client computes `$o1` from a client-only
+  linear fit of the heal curve (see [Tooltips](#dynamic-tooltips)), so it scales
+  with the player's level (and the client adds healing power).
 - **Script:** `spell_sod_mage_regeneration` (AuraScript, `AfterEffectApply` on the
   periodic-heal effect).
 
@@ -116,7 +117,30 @@ Arcane)** damage to nearby enemies along its trail.
   `×m1/100 = ×1.0`).
 - **Scripts:** `spell_sod_mage_living_flame` (SpellScript, `OnEffectHitTarget`
   dummy → summon) and `npc_sod_mage_living_flame` (CreatureAI, chase + per-second
-  owner cast), in `src/spell_sod_mage_living_flame.cpp`.
+  owner cast), in `src/spell_sod_mage_living_flame.cpp`. Living Flame's tooltip
+  uses the cross-spell token `$401558s1` to show the trail's per-second damage.
+
+## Dynamic tooltips
+
+Regeneration, Mass Regeneration, and Living Flame deal a **level-scaled** amount
+(a quadratic curve in the caster's level), computed exactly server-side in script.
+The 3.3.5a client computes tooltips itself and can only scale **linearly**
+(`EffectRealPointsPerLevel`), so it can't render the quadratic.
+
+The generator works around this by writing a **client-only** linear fit of each
+curve into the client `Spell.dbc` (the `client_overrides` / `client_overrides_float`
+keys → `EffectBasePoints_1`, `EffectRealPointsPerLevel_1`, `BaseLevel 1`,
+`MaxLevel 80`), never into the server `spell_dbc`. The fit spans the full server
+range — **exact at levels 1 and 80**, scaling the whole way — so the tooltip is
+dynamic across all levels and accurate at the cap, but because the client can only
+scale linearly it reads **high mid-range** (a straight line over a quadratic). The
+actual heal/damage is the exact SoD quadratic at every level — only the tooltip is
+approximate. Tooltip text uses the client tokens `$o1` (periodic heal total) /
+`$d` (duration) / `$401558s1` (Living Flame's trail damage); the client adds the
+player's spell/healing power on top.
+
+Knobs live in `tools/build_sod_mage_patch.py`: the `living_flame_tick` / `regen_tick`
+curves and `tooltip_fit(curve, lo=1, hi=80)` — the fit anchors (full server range).
 
 ## Config (`conf/mod_sod_mage.conf.dist`)
 
@@ -135,11 +159,12 @@ Verified against the real SoD DB2 data (see [Pulling SoD data](pulling-sod-data.
 - **Temporal Beacon — accurate.** Conversion 70% / self-reduced 50% / multi-target
   reduced 80% (our `ConversionPct=70`, `SelfPct=50`, `MultiTargetPct=20` kept all
   match `$s4/$s5/$s6`), passive HoT 8/sec, 30s, 100yd, instant, Arcane — all match.
-- **Regeneration — one gap.** Cast/duration/range/mana(28%)/school all match. But
-  SoD heals for **165% of healing power over 3 sec** (`$<healpower>*$m1/100*3`,
-  `$m1=55`, *pure spellpower scaling, no flat base*), whereas ours is a flat
-  ~55/tick with no spellpower coefficient. Closing this is a balance/scaling change
-  (set the effect's healing coefficient); deferred while balance is out of scope.
+- **Regeneration / Mass Regeneration — accurate.** Cast/duration/range/mana/school
+  all match. The heal is the SoD **level curve** — `$<power>` resolves to
+  `38.258376 + 0.904195·L + 0.161311·L²`, × `m1/100` (`m1=55` → 0.55/tick × 3
+  ticks) — so it heals without gear; healing power adds on top via
+  `spell_bonus_data dot 0.55`. Set per tick in script (`OnEffectCalcAmount` →
+  `SetAmount(SodMageRules::RegenTickHeal(level))`).
 
 The "multi-target Arcane" detection (`IsTargetingArea()`) remains a heuristic.
 
