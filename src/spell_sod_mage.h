@@ -39,7 +39,19 @@ enum SodMageSpells
     SPELL_SOD_MAGE_TEMPORAL_BEACON      = 400735, // target marker + passive HoT
     SPELL_SOD_MAGE_TEMPORAL_BEACON_HEAL = 401405, // triggered chronomantic heal (SoD)
     SPELL_SOD_MAGE_TEMPORAL_CONVERSION  = 900001, // hidden caster-side proc aura
+    SPELL_SOD_MAGE_LIVING_FLAME         = 401556, // summons the creeping flame
+    SPELL_SOD_MAGE_LIVING_FLAME_DAMAGE  = 401558, // per-second Spellfire AoE tick
 };
+
+// Living Flame's mover is a custom creature in the module's reserved creature
+// band (700200-700299), shown with the Fire Elemental model (a walking flame).
+// The 700100 demo creature was retired (see sod_mage_mass_regeneration.sql).
+// Defined in sod_mage_living_flame.sql.
+constexpr uint32 NPC_SOD_MAGE_LIVING_FLAME = 700200;
+
+// Living Flame lasts 10s (SoD) and ticks its AoE once per second.
+constexpr uint32 SOD_MAGE_LIVING_FLAME_DURATION_MS = 10000;
+constexpr uint32 SOD_MAGE_LIVING_FLAME_TICK_MS     = 1000;
 
 // Temporal Beacon durations (ms). SoD applies different lengths depending on the
 // caster spell — Regeneration 30s, Mass Regeneration 15s — so we override the

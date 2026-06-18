@@ -49,3 +49,13 @@ SodMage.TemporalBeacon.SelfPct = 50
 #
 
 SodMage.TemporalBeacon.MultiTargetPct = 20
+
+#
+#    SodMage.LivingFlame.SpeedPct
+#        Description: Move speed of the Living Flame creature as a percent of
+#                     normal run speed. Lower = the flame creeps more slowly
+#                     toward its target.
+#        Default:     40
+#
+
+SodMage.LivingFlame.SpeedPct = 40

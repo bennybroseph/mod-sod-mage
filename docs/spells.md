@@ -8,8 +8,9 @@ Reference for the spells implemented so far. IDs and mechanics are defined in
 [`mod-rune-engraving`](../../mod-rune-engraving) engine installed, **Regeneration**
 and **Mass Regeneration** are also acquirable as **engravable runes** — Regeneration
 via the SoD item chain (Comprehension Charm + Spell Notes), Mass Regeneration via the
-Awakened Lich drop (the shared `mod-sod-world` encounter). See the
-[README](../README.md) for the player-facing flow.
+Awakened Lich drop (the shared `mod-sod-world` encounter). **Living Flame** is
+registered as a guarded **Legs** rune (catalog only — no item/drop chain yet). See
+the [README](../README.md) for the player-facing flow.
 
 ## Regeneration — `401417`
 
@@ -84,6 +85,39 @@ The instant triggered heal that the conversion aura casts (the real SoD ID). Hea
 amount is supplied at cast time (`SPELLVALUE_BASE_POINT0`). Its own ID so it shows
 correctly in the combat log and benefits from healing mods. No script.
 
+## Living Flame — `401556`
+
+A spellfire flame that creeps toward the target, dealing **Spellfire (Fire +
+Arcane)** damage to nearby enemies along its trail.
+
+- **Cast:** instant, 35 yd, 11% base mana, **30s cooldown** (SoD), requires a
+  hostile target. Cloned from Fire Blast (`2136`) for an instant enemy-target fire
+  cast; cooldown/GCD set explicitly (`RecoveryTime 30000`, `StartRecoveryTime 1500`)
+  so the server row carries them.
+- **School:** `SchoolMask = 68` (Fire | Arcane). Because the damage carries **both**
+  bits, it satisfies any Fire- *or* Arcane-gated proc — including the Mage's own
+  **Chronomantic Healing** (the Temporal Beacon conversion, which checks
+  `& Arcane`).
+- **Mover:** SoD drives the flame with an **AreaTrigger**, which 3.3.5a doesn't
+  have. We summon an invisible, immune trigger creature
+  (`npc_sod_mage_living_flame`, entry `700200`, Fire Elemental model 1405 — a
+  visible walking flame) that homes on the target at `SodMage.LivingFlame.SpeedPct`
+  of run speed and lives 10 sec.
+- **Damage:** the creature itself deals nothing. Once per second it makes its
+  **summoner (the Mage)** recast the Spellfire AoE **`401558`** at its current
+  position — so the damage is attributed to the caster (this is what lets it feed
+  Chronomantic Healing and other procs). `401558` is cloned from Flamestrike
+  (`2120`), so each tick renders a ground-fire patch; the moving sequence reads as
+  the flame's trail. AoE radius 8 yd (`SpellRadius` index 14), `DefenseType = 1`
+  (magic). **Per-tick damage is a level curve** — `13.828124 + 0.018012·L +
+  0.044141·L²` (from wago/wowhead), set in script (`spell_sod_mage_living_flame_damage`,
+  `OnEffectLaunchTarget` → `SetEffectValue`) so it works with no spellpower; gear
+  spellpower adds on top via `spell_bonus_data direct 1.0` (the SoD tooltip's
+  `×m1/100 = ×1.0`).
+- **Scripts:** `spell_sod_mage_living_flame` (SpellScript, `OnEffectHitTarget`
+  dummy → summon) and `npc_sod_mage_living_flame` (CreatureAI, chase + per-second
+  owner cast), in `src/spell_sod_mage_living_flame.cpp`.
+
 ## Config (`conf/mod_sod_mage.conf.dist`)
 
 | Key | Default | Meaning |
@@ -92,6 +126,7 @@ correctly in the combat log and benefits from healing mods. No script.
 | `SodMage.TemporalBeacon.ConversionPct` | 70 | % of Arcane damage converted to healing. |
 | `SodMage.TemporalBeacon.SelfPct` | 50 | % of that healing kept when the target is the caster. |
 | `SodMage.TemporalBeacon.MultiTargetPct` | 20 | % kept when the damage came from a multi-target spell. |
+| `SodMage.LivingFlame.SpeedPct` | 40 | Living Flame creature move speed, % of normal run speed. |
 
 ## Accuracy vs. SoD (checked against wago.tools, build 1.15.8.x)
 
@@ -107,3 +142,11 @@ Verified against the real SoD DB2 data (see [Pulling SoD data](pulling-sod-data.
   (set the effect's healing coefficient); deferred while balance is out of scope.
 
 The "multi-target Arcane" detection (`IsTargetingArea()`) remains a heuristic.
+
+- **Living Flame — adapted.** Instant / 35 yd / 11% mana / 30s cooldown /
+  Spellfire (school 68) / 10s / 1s damage tick all match wago. Damage is a **level
+  curve** (`$<power>` in the SoD tooltip resolves to `13.828124 + 0.018012·L +
+  0.044141·L²`, not gear spellpower — so it works without gear), reproduced in
+  script; gear spellpower adds at `×1.0` on top. SoD's AreaTrigger mover has no
+  3.3.5a analogue, so the homing chasing-creature is a deliberate adaptation
+  (behavior-equivalent, not a 1:1 port).

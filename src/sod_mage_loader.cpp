@@ -17,6 +17,7 @@
 
 // Each script source exposes one AddSC_* function; declare them here.
 void AddSC_sod_mage_spell_scripts();
+void AddSC_sod_mage_living_flame();
 void AddSC_item_sod_mage_decode_notes();
 
 // Entry point invoked by the module loader. The name must be
@@ -24,5 +25,6 @@ void AddSC_item_sod_mage_decode_notes();
 void Addmod_sod_mageScripts()
 {
     AddSC_sod_mage_spell_scripts();
+    AddSC_sod_mage_living_flame();
     AddSC_item_sod_mage_decode_notes();
 }

@@ -56,16 +56,23 @@ SKILL_INNER = "DBFilesClient\\SkillLineAbility.dbc"
 SPELL_ATTR0_PASSIVE = 0x00000040
 SPELL_ATTR0_DO_NOT_DISPLAY = 0x00000080
 SPELL_ATTR1_IS_CHANNELED = 0x00000004
+EFFECT_SCHOOL_DAMAGE = 2
+EFFECT_DUMMY = 3
 EFFECT_APPLY_AURA = 6
 EFFECT_HEAL = 10
 AURA_DUMMY = 4
 AURA_PERIODIC_HEAL = 8
 TARGET_UNIT_CASTER = 1
+TARGET_UNIT_TARGET_ENEMY = 6
+TARGET_UNIT_DEST_AREA_ENEMY = 16  # enemies around a cast destination
 TARGET_UNIT_TARGET_ALLY = 21
 TARGET_UNIT_LASTTARGET_AREA_PARTY = 37  # the target's party within radius
+SCHOOL_MASK_FIRE = 1 << 2    # 4
 SCHOOL_MASK_ARCANE = 1 << 6  # 64
+SCHOOL_MASK_SPELLFIRE = SCHOOL_MASK_FIRE | SCHOOL_MASK_ARCANE  # 68 (SoD "Spellfire")
 DISPEL_MAGIC = 1
 SKILL_ARCANE = 237  # mage Arcane skill line; controls the spellbook tab (client-side)
+SKILL_FIRE = 8      # mage Fire skill line; controls the spellbook tab (client-side)
 NAME_MASK = 16712190  # standard "enUS available" locale mask
 # Proc on the caster dealing harmful magic/none-class spell damage, plus ranged
 # auto-attacks so an Arcane wand (a ranged auto-attack of Arcane school) also feeds
@@ -171,6 +178,7 @@ def build_spells(idx):
     dur_30s = idx["dur"][30000]
     dur_perm = idx["dur"][-1]
     range_40 = idx["range"][40.0]
+    range_35 = idx["range"][35.0]
     range_100 = idx["range"][100.0]
     range_self = idx["range"][0.0]
     # These texture names are each spell's displayed icon. If a spell is also a
@@ -181,6 +189,7 @@ def build_spells(idx):
     icon_beacon = idx["icon"]["spell_nature_timestop"]
     icon_regen = idx["icon"]["inv_enchant_essencemysticalsmall"]
     icon_regen_large = idx["icon"]["inv_enchant_essencemysticallarge"]
+    icon_living_flame = idx["icon"]["spell_fire_masterofelements"]
 
     return [
         {  # 401417 Regeneration: channeled 3s single-target HoT. A channel uses
@@ -191,8 +200,9 @@ def build_spells(idx):
             # Static wording: the 3.3.5a client can't resolve a server-side
             # coefficient (no $<healpower> engine, no client coeff override), so a
             # dynamic token would under-report. State the SoD value plainly instead.
-            "desc": "Heals the target for an amount equal to 165% of your healing "
-                    "power over 3 sec and applies Temporal Beacon for 30 sec.",
+            "desc": "Heals the target for about 1110 health over 3 sec (at level "
+                    "60; scales with your level and healing power) and applies "
+                    "Temporal Beacon for 30 sec.",
             # SoD: heals 165% of healing power over 3 ticks, no flat base. We model
             # that with a 0.55/tick spellpower coefficient (spell_bonus_data) and a
             # zero base. SpellLevel 0 avoids AzerothCore's low-level coefficient penalty.
@@ -219,9 +229,9 @@ def build_spells(idx):
             "id": 412510, "client": True, "template": 139,  # clone Renew
             "skill_line": SKILL_ARCANE,  # spellbook tab: Arcane
             "name": "Mass Regeneration", "script": "spell_sod_mage_mass_regeneration",
-            "desc": "Heals the target and their party members for an amount equal to "
-                    "165% of your healing power over 3 sec and applies Temporal Beacon "
-                    "to each for 15 sec.",
+            "desc": "Heals the target and their party members for about 1110 health "
+                    "over 3 sec (at level 60; scales with your level and healing "
+                    "power) and applies Temporal Beacon to each for 15 sec.",
             "bonus": {"direct": 0.0, "dot": 0.55, "ap": 0.0, "ap_dot": 0.0},
             "overrides": {
                 "Attributes": 0, "AttributesEx": SPELL_ATTR1_IS_CHANNELED,
@@ -316,6 +326,68 @@ def build_spells(idx):
                 "SpellPhaseMask": 2,   # PROC_SPELL_PHASE_HIT
                 "HitMask": 0, "AttributesMask": 2, "DisableEffectsMask": 0,
                 "ProcsPerMinute": 0, "Chance": 0, "Cooldown": 0, "Charges": 0,
+            },
+        },
+        {  # 401556 Living Flame: summons an invisible creeping flame (a script
+           # creature, npc_sod_mage_living_flame) that homes on the target. Each
+           # second the creature makes the MAGE recast 401558 at its position, so
+           # the Spellfire (Fire|Arcane) AoE is the caster's — feeding Chronomantic
+           # Healing and any Fire/Arcane proc. SoD drives the flame with an
+           # AreaTrigger (no 3.3.5a analogue), hence the chasing-creature adaptation.
+           # Cloned from Fire Blast (2136) for an instant enemy-target fire cast.
+           # SoD cooldown 30s (wago RecoveryTime) + 1.5s GCD set explicitly so the
+           # server row (built from overrides only) carries them.
+            "id": 401556, "client": True, "template": 2136,  # clone Fire Blast
+            "skill_line": SKILL_FIRE,  # spellbook tab: Fire
+            "name": "Living Flame", "script": "spell_sod_mage_living_flame",
+            "desc": "Summons a spellfire flame that creeps toward the target, "
+                    "dealing about 174 Spellfire (Fire and Arcane) damage each "
+                    "second to nearby enemies (at level 60; scales with your level "
+                    "and spell power). Lasts 10 sec.",
+            "overrides": {
+                "Attributes": 0, "AttributesEx": 0,
+                "CastingTimeIndex": cast_instant, "DurationIndex": 0,
+                "RecoveryTime": 30000, "CategoryRecoveryTime": 0,
+                "StartRecoveryCategory": 133, "StartRecoveryTime": 1500,
+                "RangeIndex": range_35, "PowerType": 0, "ManaCost": 0,
+                "ManaCostPct": 11, "SchoolMask": SCHOOL_MASK_SPELLFIRE,
+                "SpellIconID": icon_living_flame, "EquippedItemClass": -1,
+                "SpellLevel": 0,
+                "Effect_1": EFFECT_DUMMY, "EffectAura_1": 0,
+                "EffectBasePoints_1": 0,
+                "ImplicitTargetA_1": TARGET_UNIT_TARGET_ENEMY,
+                "EffectRadiusIndex_1": 0,
+                "Effect_2": 0, "EffectAura_2": 0, "ImplicitTargetA_2": 0,
+                "Effect_3": 0, "EffectAura_3": 0, "ImplicitTargetA_3": 0,
+            },
+        },
+        {  # 401558 Living Flame (damage): the per-second Spellfire AoE the Mage
+           # recasts at the creeping creature's position. Cloned from Flamestrike
+           # (2120) so it inherits a ground-fire visual — the repeated patches read
+           # as the flame's trail. SchoolMask 68 (Fire|Arcane); DefenseType 1
+           # (magic) so it lands as magic spell damage and feeds the beacon proc.
+           # Per-tick damage is set in script from a level curve (works without
+           # spellpower); the spell_script binds spell_sod_mage_living_flame_damage.
+           # gear spellpower adds on top via spell_bonus_data direct 1.0 (matches
+           # the SoD tooltip's x m1/100 = x1.0). EffectBasePoints 0 (script supplies).
+            "id": 401558, "client": True, "template": 2120,  # clone Flamestrike
+            "name": "Living Flame",
+            "script": "spell_sod_mage_living_flame_damage",
+            "bonus": {"direct": 1.0, "dot": 0.0, "ap": 0.0, "ap_dot": 0.0},
+            "overrides": {
+                "Attributes": 0, "AttributesEx": 0,
+                "CastingTimeIndex": cast_instant, "DurationIndex": 0,
+                "RangeIndex": range_100, "PowerType": 0, "ManaCost": 0,
+                "ManaCostPct": 0, "SchoolMask": SCHOOL_MASK_SPELLFIRE,
+                "DefenseType": 1,  # SPELL_DAMAGE_CLASS_MAGIC
+                "SpellIconID": icon_living_flame, "EquippedItemClass": -1,
+                "SpellLevel": 0,
+                "Effect_1": EFFECT_SCHOOL_DAMAGE, "EffectAura_1": 0,
+                "EffectBasePoints_1": 0,  # set in script from a level curve
+                "ImplicitTargetA_1": TARGET_UNIT_DEST_AREA_ENEMY,
+                "EffectRadiusIndex_1": 14,  # 8 yd (SpellRadius index 14)
+                "Effect_2": 0, "EffectAura_2": 0, "ImplicitTargetA_2": 0,
+                "Effect_3": 0, "EffectAura_3": 0, "ImplicitTargetA_3": 0,
             },
         },
     ]

@@ -65,8 +65,19 @@ class spell_sod_mage_regeneration : public AuraScript
         ApplyTemporalBeacon(caster, target, SOD_MAGE_BEACON_MS_REGEN);
     }
 
+    // Per-tick heal from the SoD level curve (so it heals with no gear); healing
+    // power adds on top via spell_bonus_data.
+    void CalcHeal(AuraEffect const* /*aurEff*/, int32& amount, bool& /*canBeRecalculated*/)
+    {
+        if (Unit* caster = GetCaster())
+            amount = SodMageRules::RegenTickHeal(caster->GetLevel());
+    }
+
     void Register() override
     {
+        DoEffectCalcAmount += AuraEffectCalcAmountFn(
+            spell_sod_mage_regeneration::CalcHeal,
+            EFFECT_0, SPELL_AURA_PERIODIC_HEAL);
         AfterEffectApply += AuraEffectApplyFn(
             spell_sod_mage_regeneration::HandleApply,
             EFFECT_0, SPELL_AURA_PERIODIC_HEAL, AURA_EFFECT_HANDLE_REAL);
@@ -95,8 +106,18 @@ class spell_sod_mage_mass_regeneration : public AuraScript
         ApplyTemporalBeacon(caster, target, SOD_MAGE_BEACON_MS_MASS_REGEN);
     }
 
+    // Same level-curve per-tick heal as Regeneration (both heal 165% over 3 sec).
+    void CalcHeal(AuraEffect const* /*aurEff*/, int32& amount, bool& /*canBeRecalculated*/)
+    {
+        if (Unit* caster = GetCaster())
+            amount = SodMageRules::RegenTickHeal(caster->GetLevel());
+    }
+
     void Register() override
     {
+        DoEffectCalcAmount += AuraEffectCalcAmountFn(
+            spell_sod_mage_mass_regeneration::CalcHeal,
+            EFFECT_0, SPELL_AURA_PERIODIC_HEAL);
         AfterEffectApply += AuraEffectApplyFn(
             spell_sod_mage_mass_regeneration::HandleApply,
             EFFECT_0, SPELL_AURA_PERIODIC_HEAL, AURA_EFFECT_HANDLE_REAL);

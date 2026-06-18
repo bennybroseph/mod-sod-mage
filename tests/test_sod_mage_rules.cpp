@@ -81,3 +81,19 @@ TEST(SodMageBeaconContract, MassRegenBeaconIsHalfOfRegen)
     EXPECT_EQ(SOD_MAGE_BEACON_MS_MASS_REGEN, 15000);
     EXPECT_EQ(SOD_MAGE_BEACON_MS_REGEN, 2 * SOD_MAGE_BEACON_MS_MASS_REGEN);
 }
+
+// --- Level-curve base values (so the spells work with no gear). Expected values
+// computed from the wago/wowhead tooltip polynomials; chosen levels land well away
+// from integer boundaries so float truncation is stable across compilers. ---
+TEST(SodMageLevelCurves, LivingFlameTickDamage)
+{
+    EXPECT_EQ(LivingFlameTickDamage(1), 13);
+    EXPECT_EQ(LivingFlameTickDamage(60), 173);
+}
+
+TEST(SodMageLevelCurves, RegenTickHeal)
+{
+    // Per tick (3 ticks over 3 sec); ~370/tick -> ~1110 total at level 60.
+    EXPECT_EQ(RegenTickHeal(1), 21);
+    EXPECT_EQ(RegenTickHeal(60), 370);
+}

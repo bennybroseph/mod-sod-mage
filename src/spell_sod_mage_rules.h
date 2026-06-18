@@ -45,6 +45,30 @@ namespace SodMageRules
     {
         return CalculatePct(heal, selfPct);
     }
+
+    // SoD scales several rune spells off a per-level "spell power" curve (the
+    // tooltip's $<power>), so they work with no gear; gear spell/healing power
+    // then adds on top via spell_bonus_data. The curves below are lifted from
+    // wago/wowhead's computed tooltips. Callers set the spell's base value (per
+    // tick) from these; the gear coefficient is applied by the heal/damage bonus.
+
+    // Living Flame (401558) per-second Spellfire damage. Tooltip:
+    //   (13.828124 + 0.018012*L + 0.044141*L^2) * m1/100, m1 = 100 -> x1.0.
+    inline int32 LivingFlameTickDamage(uint8 level)
+    {
+        float l = float(level);
+        return int32(13.828124f + 0.018012f * l + 0.044141f * l * l);
+    }
+
+    // Regeneration (401417) / Mass Regeneration (412510) per-tick heal (3 ticks
+    // over 3 sec). Tooltip total: $<power> * m1/100 * 3, m1 = 55 -> 0.55/tick of
+    //   (38.258376 + 0.904195*L + 0.161311*L^2).
+    inline int32 RegenTickHeal(uint8 level)
+    {
+        float l = float(level);
+        float power = 38.258376f + 0.904195f * l + 0.161311f * l * l;
+        return int32(power * 55.0f / 100.0f);
+    }
 }
 
 #endif // MODULE_SOD_MAGE_RULES_H
