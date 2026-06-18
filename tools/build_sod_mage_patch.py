@@ -45,12 +45,17 @@ SQL_OUT = os.path.join(MODULE_ROOT, "data", "sql", "db-world", "base",
                        "sod_mage_spell_dbc.sql")
 TABLE_DEF = os.path.join(REPO_ROOT, "data", "sql", "base", "db_world",
                          "spell_dbc.sql")
-PATCH_MPQ_NAME = "patch-enus-z.mpq"  # highest-priority locale patch (Data/enUS/)
-# Non-localized DBCs (no _Lang columns) are loaded by the client from the BASE
-# archive chain (Data/), not the locale chain — so SpellVisual.dbc / SkillLineAbility
-# edits must ship in a base patch to be seen. Localized DBCs (Spell.dbc) load from
-# the locale chain. We write both.
-BASE_PATCH_MPQ_NAME = "patch-z.mpq"  # highest-priority base patch letter (Data/)
+# A DBC override only wins if it outranks the highest-priority existing copy of
+# that file. The client has two archive chains: the LOCALE chain (Data/<locale>/,
+# e.g. patch-<locale>-z.mpq) and the BASE chain (Data/, e.g. patch-z.mpq). Which
+# chain holds a rival copy varies per client (the "3.3.5a HD" pack injects some
+# DBCs into the base chain). So we write non-localized DBCs to BOTH chains; the
+# letter 'z' is the highest patch letter, so our patches outrank any stock one.
+# Localized DBCs (Spell.dbc) live only in the locale chain, so they go there.
+PATCH_LETTER = "z"  # this module's patch letter (mod-sod-world uses 'y')
+# Both SoD modules' custom patch letters — excluded when reading clean client data
+# so a rebuild never sources from our own (or a sibling module's) output.
+CUSTOM_PATCH_LETTERS = ("z", "y")
 
 INNER = "DBFilesClient\\Spell.dbc"
 SKILL_INNER = "DBFilesClient\\SkillLineAbility.dbc"
@@ -528,18 +533,45 @@ def mpq_priority(path):
     return (1, rank)
 
 
-def extract_client_dbcs(client_dir, dest):
+def detect_locale(client_dir):
+    """Return the client's locale folder token under Data/ (the one holding the
+    `locale-*.mpq` archives), e.g. 'enus' or 'dede'. Preserves the on-disk case so
+    derived patch names match the client. Defaults to 'enus' if none is found."""
+    data = os.path.join(client_dir, "data")
+    try:
+        for d in sorted(os.listdir(data)):
+            p = os.path.join(data, d)
+            if os.path.isdir(p) and any(
+                    f.lower().startswith("locale-") and f.lower().endswith(".mpq")
+                    for f in os.listdir(p)):
+                return d
+    except OSError:
+        pass
+    return "enus"
+
+
+def our_patch_names(locale):
+    """Our output patch filenames in both chains for every custom letter — used
+    to exclude them when reading clean client data."""
+    names = set()
+    for letter in CUSTOM_PATCH_LETTERS:
+        names.add(("patch-%s.mpq" % letter).lower())             # base chain
+        names.add(("patch-%s-%s.mpq" % (locale, letter)).lower())  # locale chain
+    return names
+
+
+def extract_client_dbcs(client_dir, dest, locale):
     import pympq
     os.makedirs(dest, exist_ok=True)
-    locale = os.path.join(client_dir, "data", "enus")
+    ignore = our_patch_names(locale)
     base = os.path.join(client_dir, "data")
+    locale_dir = os.path.join(base, locale)
     search = []
-    for d in (base, locale):
+    for d in (base, locale_dir):
         if os.path.isdir(d):
             search += [os.path.join(d, f) for f in os.listdir(d)
                        if f.lower().endswith(".mpq")
-                       and f.lower() not in (PATCH_MPQ_NAME.lower(),
-                                             BASE_PATCH_MPQ_NAME.lower())]  # not our own output
+                       and f.lower() not in ignore]  # not our own output
 
     def extract(name):
         inner = "DBFilesClient\\" + name
@@ -727,8 +759,9 @@ def main():
                     help="emit SQL + patched DBC but do not write the MPQ")
     args = ap.parse_args()
 
-    print("[*] extracting client DBCs from", args.client)
-    used = extract_client_dbcs(args.client, args.workdir)
+    locale = detect_locale(args.client)
+    print("[*] extracting client DBCs from", args.client, "(locale: %s)" % locale)
+    used = extract_client_dbcs(args.client, args.workdir, locale)
     for k, v in used.items():
         print("    %-22s <- %s" % (k, os.path.basename(v)))
 
@@ -807,14 +840,16 @@ def main():
     if sv_patched:
         nonloc.append((sv_patched, SPELLVIS_INNER))
 
-    locale_mpq = os.path.join(args.client, "data", "enus", PATCH_MPQ_NAME)
+    locale_mpq = os.path.join(args.client, "data", locale,
+                              "patch-%s-%s.mpq" % (locale, PATCH_LETTER))
     locale_files = [(patched, INNER)] + nonloc
     pack_mpq(locale_files, locale_mpq)
     print("[*] wrote locale patch -> %s (%d DBC file(s))"
           % (locale_mpq, len(locale_files)))
 
     if nonloc:
-        base_mpq = os.path.join(args.client, "data", BASE_PATCH_MPQ_NAME)
+        base_mpq = os.path.join(args.client, "data",
+                                "patch-%s.mpq" % PATCH_LETTER)
         pack_mpq(nonloc, base_mpq)
         print("[*] wrote base patch   -> %s (%d DBC file(s))"
               % (base_mpq, len(nonloc)))

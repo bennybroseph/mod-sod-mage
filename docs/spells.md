@@ -99,10 +99,10 @@ Arcane)** damage to nearby enemies along its trail.
   visual** (`SpellVisual 700556` — a clone of Fire Blast's visual `143` with the
   on-target impact kit removed; the generator patches `SpellVisual.dbc`): the Mage
   plays the instant fire-cast gesture but **nothing renders on the target** (the
-  only fire is the ground patch). Note: `SpellVisual.dbc` is **non-localized**, so
-  the client loads it from the **base** archive chain — the generator ships it in
-  `Data/patch-z.mpq` (base) as well as the locale `patch-enus-z.mpq`, or the
-  override is ignored.
+  only fire is the ground patch). Note: the "3.3.5a HD" client ships a modified
+  `SpellVisual.dbc` in a **base** archive (`Data/patch-s.mpq`), which outranks the
+  locale patch — so the generator writes our `SpellVisual.dbc` to **both**
+  `Data/patch-z.mpq` (base) and `patch-enus-z.mpq`, or the override is shadowed.
 - **School:** `SchoolMask = 68` (Fire | Arcane). Because the damage carries **both**
   bits, it satisfies any Fire- *or* Arcane-gated proc — including the Mage's own
   **Chronomantic Healing** (the Temporal Beacon conversion, which checks
