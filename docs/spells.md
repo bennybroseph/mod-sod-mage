@@ -94,22 +94,31 @@ Arcane)** damage to nearby enemies along its trail.
 - **Cast:** instant, 35 yd, 11% base mana, **30s cooldown** (SoD), requires a
   hostile target. Cloned from Fire Blast (`2136`) for an instant enemy-target fire
   cast; cooldown/GCD set explicitly (`RecoveryTime 30000`, `StartRecoveryTime 1500`)
-  so the server row carries them.
+  so the server row carries them. Carries `SPELL_ATTR1_NO_THREAT`, so the **cast
+  doesn't enter combat** — only the trail's damage does. Uses a **custom cast
+  visual** (`SpellVisual 700556` — a clone of Fire Blast's visual `143` with the
+  on-target impact kit removed; the generator patches `SpellVisual.dbc`): the Mage
+  plays the instant fire-cast gesture but **nothing renders on the target** (the
+  only fire is the ground patch). Note: `SpellVisual.dbc` is **non-localized**, so
+  the client loads it from the **base** archive chain — the generator ships it in
+  `Data/patch-z.mpq` (base) as well as the locale `patch-enus-z.mpq`, or the
+  override is ignored.
 - **School:** `SchoolMask = 68` (Fire | Arcane). Because the damage carries **both**
   bits, it satisfies any Fire- *or* Arcane-gated proc — including the Mage's own
   **Chronomantic Healing** (the Temporal Beacon conversion, which checks
   `& Arcane`).
 - **Mover:** SoD drives the flame with an **AreaTrigger**, which 3.3.5a doesn't
-  have. We summon an invisible, immune trigger creature
-  (`npc_sod_mage_living_flame`, entry `700200`, Fire Elemental model 1405 — a
-  visible walking flame) that homes on the target at `SodMage.LivingFlame.SpeedPct`
-  of run speed and lives 10 sec.
+  have. We summon an immune, non-attackable trigger creature
+  (`npc_sod_mage_living_flame`, entry `700200`, Vazruden Fire Trap model `17522`
+  at 0.25 scale, sunk to the ground with `HoverHeight -1.0` — a self-contained
+  ground-fire patch, so it reads as fire creeping along the ground) that homes on
+  the target at `SodMage.LivingFlame.SpeedPct` of run speed and lives 10 sec.
 - **Damage:** the creature itself deals nothing. Once per second it makes its
   **summoner (the Mage)** recast the Spellfire AoE **`401558`** at its current
   position — so the damage is attributed to the caster (this is what lets it feed
   Chronomantic Healing and other procs). `401558` is cloned from Flamestrike
   (`2120`), so each tick renders a ground-fire patch; the moving sequence reads as
-  the flame's trail. AoE radius 8 yd (`SpellRadius` index 14), `DefenseType = 1`
+  the flame's trail. AoE radius 3 yd (`SpellRadius` index 15 — a narrow trail), `DefenseType = 1`
   (magic). **Per-tick damage is a level curve** — `13.828124 + 0.018012·L +
   0.044141·L²` (from wago/wowhead), set in script (`spell_sod_mage_living_flame_damage`,
   `OnEffectLaunchTarget` → `SetEffectValue`) so it works with no spellpower; gear

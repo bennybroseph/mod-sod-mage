@@ -45,10 +45,22 @@ SQL_OUT = os.path.join(MODULE_ROOT, "data", "sql", "db-world", "base",
                        "sod_mage_spell_dbc.sql")
 TABLE_DEF = os.path.join(REPO_ROOT, "data", "sql", "base", "db_world",
                          "spell_dbc.sql")
-PATCH_MPQ_NAME = "patch-enus-z.mpq"  # highest-priority locale patch letter
+PATCH_MPQ_NAME = "patch-enus-z.mpq"  # highest-priority locale patch (Data/enUS/)
+# Non-localized DBCs (no _Lang columns) are loaded by the client from the BASE
+# archive chain (Data/), not the locale chain — so SpellVisual.dbc / SkillLineAbility
+# edits must ship in a base patch to be seen. Localized DBCs (Spell.dbc) load from
+# the locale chain. We write both.
+BASE_PATCH_MPQ_NAME = "patch-z.mpq"  # highest-priority base patch letter (Data/)
 
 INNER = "DBFilesClient\\Spell.dbc"
 SKILL_INNER = "DBFilesClient\\SkillLineAbility.dbc"
+SPELLVIS_INNER = "DBFilesClient\\SpellVisual.dbc"
+# Custom SpellVisual for Living Flame's cast: a clone of Fire Blast's visual (143)
+# with the on-target impact kit dropped, so the caster plays the instant fire-cast
+# gesture (castKit 20095) but no fire bursts on the enemy. Client-only (animation).
+SPELLVIS_FIRE_BLAST = 143
+SPELLVIS_LIVING_FLAME_CAST = 700556
+SPELLVIS_FIELD_IMPACT_KIT = 3  # SpellVisual.dbc field index of impactKit
 
 # ---------------------------------------------------------------------------
 # Enum values (from core SharedDefines.h / SpellAuraDefines.h).
@@ -56,6 +68,7 @@ SKILL_INNER = "DBFilesClient\\SkillLineAbility.dbc"
 SPELL_ATTR0_PASSIVE = 0x00000040
 SPELL_ATTR0_DO_NOT_DISPLAY = 0x00000080
 SPELL_ATTR1_IS_CHANNELED = 0x00000004
+SPELL_ATTR1_NO_THREAT = 0x00000400  # no threat; also does not cause target to engage
 EFFECT_SCHOOL_DAMAGE = 2
 EFFECT_DUMMY = 3
 EFFECT_APPLY_AURA = 6
@@ -385,11 +398,17 @@ def build_spells(idx):
             # $401558s1 cross-references the trail spell's per-second damage, which
             # the client computes per the player's level from 401558's client-only
             # linear fit below (server applies the exact SoD curve in script).
-            "desc": "Summons a spellfire flame that creeps toward the target, "
-                    "dealing $401558s1 Spellfire (Fire and Arcane) damage each "
-                    "second to nearby enemies. Lasts 10 sec.",
+            "desc": "Summons a spellfire flame that moves toward the target, "
+                    "leaving a trail of spellfire. This trail deals $401558s1 "
+                    "Spellfire damage every second to nearby enemies. Lasts 10 sec.",
             "overrides": {
-                "Attributes": 0, "AttributesEx": 0,
+                # NO_THREAT so the cast itself doesn't engage; combat begins only
+                # when the trail (401558) deals damage. SpellVisualID points at our
+                # custom cast visual (Fire Blast's caster gesture with the on-target
+                # impact removed) so the Mage animates the cast but no fire renders
+                # on the target — the only fire is the ground patch the mover leaves.
+                "Attributes": 0, "AttributesEx": SPELL_ATTR1_NO_THREAT,
+                "SpellVisualID_1": SPELLVIS_LIVING_FLAME_CAST,
                 "CastingTimeIndex": cast_instant, "DurationIndex": 0,
                 "RecoveryTime": 30000, "CategoryRecoveryTime": 0,
                 "StartRecoveryCategory": 133, "StartRecoveryTime": 1500,
@@ -433,7 +452,8 @@ def build_spells(idx):
                 "Effect_1": EFFECT_SCHOOL_DAMAGE, "EffectAura_1": 0,
                 "EffectBasePoints_1": 0,  # set in script from a level curve
                 "ImplicitTargetA_1": TARGET_UNIT_DEST_AREA_ENEMY,
-                "EffectRadiusIndex_1": 14,  # 8 yd (SpellRadius index 14)
+                "EffectRadiusIndex_1": 15,  # 3 yd (SpellRadius index 15) -- narrow
+                                            # trail; SoD's "nearby enemies" AoE.
                 "Effect_2": 0, "EffectAura_2": 0, "ImplicitTargetA_2": 0,
                 "Effect_3": 0, "EffectAura_3": 0, "ImplicitTargetA_3": 0,
             },
@@ -518,7 +538,8 @@ def extract_client_dbcs(client_dir, dest):
         if os.path.isdir(d):
             search += [os.path.join(d, f) for f in os.listdir(d)
                        if f.lower().endswith(".mpq")
-                       and f.lower() != PATCH_MPQ_NAME.lower()]  # not our own output
+                       and f.lower() not in (PATCH_MPQ_NAME.lower(),
+                                             BASE_PATCH_MPQ_NAME.lower())]  # not our own output
 
     def extract(name):
         inner = "DBFilesClient\\" + name
@@ -547,7 +568,7 @@ def extract_client_dbcs(client_dir, dest):
     used = {}
     for dbc in ("Spell.dbc", "SpellCastTimes.dbc", "SpellDuration.dbc",
                 "SpellRange.dbc", "SpellRadius.dbc", "SpellIcon.dbc",
-                "SkillLineAbility.dbc"):
+                "SkillLineAbility.dbc", "SpellVisual.dbc"):
         used[dbc] = extract(dbc)
     return used
 
@@ -581,6 +602,24 @@ def build_skill_line_ability(workdir, spells):
     out = os.path.join(workdir, "SkillLineAbility.dbc.patched")
     with open(out, "wb") as fh:
         fh.write(sla.serialize())
+    return out
+
+
+def build_spell_visual(workdir):
+    """Add the custom Living Flame cast visual: clone Fire Blast's SpellVisual
+    (143) and zero its impact kit, so the caster plays the instant fire-cast
+    animation without a fire burst on the target. Client-only (animation); the
+    full (base + appended) file is packed into the patch MPQ. Returns the path."""
+    sv = WDBC.load(os.path.join(workdir, "SpellVisual.dbc"))
+    rec = bytearray(sv.find(SPELLVIS_FIRE_BLAST))
+    sv.set_int(rec, 0, SPELLVIS_LIVING_FLAME_CAST)   # ID
+    sv.set_int(rec, SPELLVIS_FIELD_IMPACT_KIT, 0)    # drop the on-target burst
+    sv.records.append(rec)
+    out = os.path.join(workdir, "SpellVisual.dbc.patched")
+    with open(out, "wb") as fh:
+        fh.write(sv.serialize())
+    print("[*] SpellVisual row added: %d (Fire Blast cast 143, impact removed)"
+          % SPELLVIS_LIVING_FLAME_CAST)
     return out
 
 
@@ -745,6 +784,9 @@ def main():
     # --- build patched client SkillLineAbility.dbc (spellbook tab grouping) ---
     sla_patched = build_skill_line_ability(args.workdir, spells)
 
+    # --- build patched client SpellVisual.dbc (Living Flame cast animation) ---
+    sv_patched = build_spell_visual(args.workdir)
+
     # --- emit SQL ---
     os.makedirs(os.path.dirname(SQL_OUT), exist_ok=True)
     with open(SQL_OUT, "w", encoding="utf-8", newline="\n") as fh:
@@ -755,12 +797,27 @@ def main():
     if args.dry_run:
         print("[*] dry-run: skipping MPQ pack")
         return
-    out_mpq = os.path.join(args.client, "data", "enus", PATCH_MPQ_NAME)
-    files = [(patched, INNER)]
+    # Localized DBCs (Spell.dbc) load from the locale chain; non-localized ones
+    # (SkillLineAbility, SpellVisual) load from the base chain. Ship each to the
+    # chain the client actually reads it from (plus the locale patch for good
+    # measure), so every override is guaranteed to win.
+    nonloc = []
     if sla_patched:
-        files.append((sla_patched, SKILL_INNER))
-    pack_mpq(files, out_mpq)
-    print("[*] wrote client patch -> %s (%d DBC file(s))" % (out_mpq, len(files)))
+        nonloc.append((sla_patched, SKILL_INNER))
+    if sv_patched:
+        nonloc.append((sv_patched, SPELLVIS_INNER))
+
+    locale_mpq = os.path.join(args.client, "data", "enus", PATCH_MPQ_NAME)
+    locale_files = [(patched, INNER)] + nonloc
+    pack_mpq(locale_files, locale_mpq)
+    print("[*] wrote locale patch -> %s (%d DBC file(s))"
+          % (locale_mpq, len(locale_files)))
+
+    if nonloc:
+        base_mpq = os.path.join(args.client, "data", BASE_PATCH_MPQ_NAME)
+        pack_mpq(nonloc, base_mpq)
+        print("[*] wrote base patch   -> %s (%d DBC file(s))"
+              % (base_mpq, len(nonloc)))
 
 
 if __name__ == "__main__":
