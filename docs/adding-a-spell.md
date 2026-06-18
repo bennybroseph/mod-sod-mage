@@ -11,7 +11,13 @@ The client can only render what it already has. Before writing anything, decide:
 - **Spell ID** — reuse the real SoD ID if there is one; otherwise pick from the
   reserved `900000–900099` band.
 - **Icon** — pick an existing `SpellIcon` (the generator resolves it by texture
-  name).
+  name). Use the **same texture name in every place the spell's icon appears**, or
+  they drift out of sync:
+  - the generator's `SpellIconID` in `tools/build_sod_mage_patch.py` (what the
+    learned spell shows in the spellbook/action bar), and
+  - if the spell is acquirable as a **rune**, the `rune_template.icon` in the rune
+    SQL (`data/sql/db-world/base/sod_mage_*.sql`) — the rune panel renders this, so
+    a mismatch makes the rune-list icon differ from the spell it unlocks.
 - **Visual** — reuse an existing `SpellVisualID`. There is no way to recolor a
   beam without custom art; pick a visual that already looks right. (Regeneration
   reuses Drain Mana's beam `12657`; Temporal Beacon reuses Lightning Shield `37`.)

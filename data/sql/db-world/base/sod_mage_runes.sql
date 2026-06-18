@@ -14,6 +14,8 @@
 -- Mapping for rune 7000001 (Regeneration -> spell 401417):
 --   class_mask 128 = Mage           (1 << (CLASS_MAGE - 1) = 1 << 7)
 --   slot_mask   16 = Chest          (1 << RUNE_SLOT_CHEST  = 1 << 4)
+--   icon must equal spell 401417's displayed icon (the `icon_regen` texture in
+--   tools/build_sod_mage_patch.py) so the rune panel matches the learned spell.
 
 SET @rune_tbl := (SELECT COUNT(*) FROM information_schema.tables
                   WHERE table_schema = DATABASE() AND table_name = 'rune_template');
@@ -25,7 +27,7 @@ SET @sql := IF(@rune_tbl > 0,
 'INSERT INTO `rune_template`
     (`rune_id`, `spell_id`, `class_mask`, `slot_mask`, `name`, `icon`, `description`, `source`, `enabled`)
  VALUES
-    (7000001, 401417, 128, 16, ''Regeneration'', ''spell_arcane_studentofmagic'',
+    (7000001, 401417, 128, 16, ''Regeneration'', ''inv_enchant_essencemysticalsmall'',
      ''A channeled heal-over-time that applies Temporal Beacon to the target.'',
      ''mod-sod-mage'', 1)
  ON DUPLICATE KEY UPDATE

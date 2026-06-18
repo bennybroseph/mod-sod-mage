@@ -83,6 +83,9 @@ VALUES
 -- =====================================================================
 -- Rune 7000002 (GUARDED) -- engine-owned `rune_template`. Re-created here (its
 -- previous home, the demo-quest SQL, is removed). No-op without the engine.
+-- The `icon` below must equal spell 412510's displayed icon (the
+-- `icon_regen_large` texture in tools/build_sod_mage_patch.py) so the rune panel
+-- matches the learned spell.
 -- =====================================================================
 SET @rune_tbl := (SELECT COUNT(*) FROM information_schema.tables
                   WHERE table_schema = DATABASE() AND table_name = 'rune_template');
@@ -91,7 +94,7 @@ SET @sql := IF(@rune_tbl > 0,
 'INSERT INTO `rune_template`
     (`rune_id`, `spell_id`, `class_mask`, `slot_mask`, `name`, `icon`, `description`, `source`, `enabled`)
  VALUES
-    (7000002, 412510, 128, 256, ''Mass Regeneration'', ''spell_arcane_arcane03'',
+    (7000002, 412510, 128, 256, ''Mass Regeneration'', ''inv_enchant_essencemysticallarge'',
      ''A channeled heal-over-time that applies Temporal Beacon to nearby allies.'',
      ''mod-sod-mage'', 1)
  ON DUPLICATE KEY UPDATE

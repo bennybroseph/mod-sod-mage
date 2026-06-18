@@ -173,6 +173,11 @@ def build_spells(idx):
     range_40 = idx["range"][40.0]
     range_100 = idx["range"][100.0]
     range_self = idx["range"][0.0]
+    # These texture names are each spell's displayed icon. If a spell is also a
+    # rune, keep `rune_template.icon` in data/sql/db-world/base/sod_mage_*.sql
+    # equal to the name here (Regeneration -> sod_mage_runes.sql; Mass
+    # Regeneration -> sod_mage_mass_regeneration.sql) so the rune panel icon
+    # matches the spell it unlocks.
     icon_beacon = idx["icon"]["spell_nature_timestop"]
     icon_regen = idx["icon"]["inv_enchant_essencemysticalsmall"]
     icon_regen_large = idx["icon"]["inv_enchant_essencemysticallarge"]
