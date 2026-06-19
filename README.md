@@ -133,6 +133,12 @@ Developer docs (architecture, the generator, adding spells, deploy/verify,
 gotchas) live in [`docs/`](docs/Home.md) and are mirrored to the project wiki.
 Start at [docs/Home.md](docs/Home.md).
 
+## Contributing
+
+Adding a spell, rune, or item? Start from a skeleton in
+[`templates/`](templates/README.md) — copy it into place and fill the blanks. See
+[CONTRIBUTING.md](CONTRIBUTING.md).
+
 ## Conventions
 
 No core edits — everything stays under `modules/mod-sod-mage/`.
