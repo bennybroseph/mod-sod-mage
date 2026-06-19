@@ -119,3 +119,22 @@ TEST(SodMageEnlightenment, CustomThresholds)
     EXPECT_EQ(EnlightenmentStateFor(11, 90, 10), EnlightenmentState::None);
     EXPECT_EQ(EnlightenmentStateFor(9, 90, 10), EnlightenmentState::LowMana);
 }
+
+// --- Distance-scaled critter seeding (15% near the tower -> 5% far) ---
+TEST(SodMageSeedChance, ShippedDefaults)
+{
+    // inner 50, outer 600, max 15, min 5.
+    EXPECT_EQ(SeedChanceForDistance(0.0f, 50, 600, 15, 5), 15u);   // on the tower
+    EXPECT_EQ(SeedChanceForDistance(50.0f, 50, 600, 15, 5), 15u);  // at inner edge
+    EXPECT_EQ(SeedChanceForDistance(600.0f, 50, 600, 15, 5), 5u);  // at outer edge
+    EXPECT_EQ(SeedChanceForDistance(2000.0f, 50, 600, 15, 5), 5u); // far beyond
+    // Midpoint of the 50..600 band -> halfway between 15 and 5 = 10.
+    EXPECT_EQ(SeedChanceForDistance(325.0f, 50, 600, 15, 5), 10u);
+}
+
+TEST(SodMageSeedChance, DegenerateRadii)
+{
+    // outer <= inner: no gradient, always the max.
+    EXPECT_EQ(SeedChanceForDistance(100.0f, 200, 200, 15, 5), 15u);
+    EXPECT_EQ(SeedChanceForDistance(100.0f, 300, 200, 15, 5), 15u);
+}

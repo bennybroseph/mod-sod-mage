@@ -91,6 +91,21 @@ namespace SodMageRules
             return EnlightenmentState::LowMana;
         return EnlightenmentState::None;
     }
+
+    // Distance-scaled spawn chance for the disguised critters: `maxPct` within
+    // `inner` of the focal point (the Tower of Azora), falling off linearly to
+    // `minPct` at/beyond `outer`. Used by sod_mage_critter_seeder so apprentices
+    // cluster near Azora's tower and thin out across the rest of Elwynn.
+    inline uint32 SeedChanceForDistance(float dist, float inner, float outer,
+                                        uint32 maxPct, uint32 minPct)
+    {
+        if (dist <= inner || outer <= inner)
+            return maxPct;
+        if (dist >= outer)
+            return minPct;
+        float t = (dist - inner) / (outer - inner);            // 0 (near) .. 1 (far)
+        return uint32(float(maxPct) - t * (float(maxPct) - float(minPct)) + 0.5f);
+    }
 }
 
 #endif // MODULE_SOD_MAGE_RULES_H

@@ -14,9 +14,12 @@ Flame's scrambled notes (*Spell Notes: MILEGIN VALF*, `203752`) drop at ~20% fro
 low-level caster mobs (Kobold Geomancer, Frostmane Shadowcaster/Seer, Scarlet
 Warrior/Missionary/Zealot, Burning Blade Thug/Neophyte/Fanatic/Apprentice/Cultist);
 decoding yields *Spell Notes: Living Flame* (`203746`) which unlocks the **Legs** rune.
-**Enlightenment** is also an engravable **Chest** rune, but with **no unlock chain** —
-it's available to every Mage as soon as the engine is installed (a deliberately
-simple rune). See the [README](../README.md) for the player-facing flow.
+**Enlightenment** (Chest) is earned via the **Servant of Azora** event (Alliance):
+Polymorph the disguised critters scattered across Elwynn to free the
+apprentices, collect all four *Azora Apprentice Notes* pages they drop, and read
+them together into *Spell Notes: Enlightenment* (`203749`) — see
+[Enlightenment](#enlightenment-412324-chest-rune) below. See the
+[README](../README.md) for the player-facing flow.
 
 ## Regeneration — `401417`
 
@@ -166,6 +169,36 @@ so the rune teaches `412324` directly and no `415729` row is shipped.
 - **Script:** `spell_sod_mage_enlightenment` (AuraScript — `OnEffectPeriodic` +
   apply/remove), in `src/spell_sod_mage_enlightenment.cpp`. The mana-state decision
   is the pure, unit-tested `SodMageRules::EnlightenmentStateFor`.
+
+### Acquisition — the Servant of Azora event (Alliance)
+
+Enlightenment is **earned**, not free by class. Disguised critters named
+*Polymorphed Apprentice* (custom creature `700210`) wander **all over Elwynn**,
+each wearing a random non-Elwynn critter model and the **Wild Polymorph** debuff
+(`23603`, applied permanently). Casting **Polymorph** frees the apprentice: the
+**same creature** clears its auras (cancelling the sheep morph), snaps to a human
+model in a **dust-cloud poof** (`12244`) — so it reads as the Polymorph
+transforming it, no second NPC — thanks you, plays the **Blink** animation in place
+(`15993`, which reuses Blink's visual without moving), and drops a paper (gameobject
+`700220`). Clicking the paper grants the
+next of four **Azora Apprentice Notes** pages (`203756` / `203960` / `203961` /
+`203962` — real SoD ids). *Using* any page while holding all four assembles **Spell
+Notes: Enlightenment** (`203749`); using that unlocks the rune via the engine's
+`item_rune_unlock` (mapping `203749 → 7000004`, which flips the rune from
+free-by-class to gated).
+
+The event logic is in `src/sod_mage_azora_event.cpp` (critter seeding + reveal,
+apprentice sequence, paper grant, page combine); the data is in
+`data/sql/db-world/base/sod_mage_enlightenment_unlock.sql`. There are **no fixed
+spawns** — `sod_mage_critter_seeder` (an `AllCreatureScript`) converts a share of
+real Elwynn critters in place as they spawn, so the originals are untouched in the
+DB and return on respawn. The chance **scales with distance from the Tower of
+Azora** (`SodMage.Enlightenment.Critter*` — `CritterChanceMaxPct` 15% within
+`InnerRadius`, falling off to `CritterChanceMinPct` 5% at `OuterRadius`), via the
+unit-tested `SodMageRules::SeedChanceForDistance` — so apprentices cluster around
+Azora's tower and thin out across the zone. The disguise model is rolled in script
+(a creature is capped at 4 models, and `23603` would otherwise force its own
+transform). Horde uses a different zone/NPC — a later pass.
 
 ## Dynamic tooltips
 

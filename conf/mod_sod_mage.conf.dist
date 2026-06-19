@@ -89,3 +89,26 @@ SodMage.Enlightenment.LowManaPct = 30
 #
 
 SodMage.Enlightenment.PollMs = 5000
+
+#
+#    Disguised-critter seeding (the Enlightenment acquisition event).
+#    As real Elwynn Forest critters spawn, a share are converted in place into the
+#    disguised "Polymorphed Apprentice". The originals are untouched in the DB and
+#    return on respawn -- this only tunes how densely the disguised critters appear.
+#    The chance scales with distance from a focal point (the Tower of Azora):
+#    CritterChanceMaxPct within InnerRadius, falling off linearly to
+#    CritterChanceMinPct at/beyond OuterRadius. Set both Max and Min to 0 to disable.
+#
+#    CritterChanceMaxPct  Default: 15   (chance near the focal point)
+#    CritterChanceMinPct  Default: 5    (chance far away / elsewhere in Elwynn)
+#    CritterCenterX/Y     Default: the Tower of Azora (-9528.949, -691.179), map 0
+#    CritterInnerRadius   Default: 50   (full Max chance within this many yards)
+#    CritterOuterRadius   Default: 600  (faded to Min chance beyond this)
+#
+
+SodMage.Enlightenment.CritterChanceMaxPct = 15
+SodMage.Enlightenment.CritterChanceMinPct = 5
+SodMage.Enlightenment.CritterCenterX = -9528.949
+SodMage.Enlightenment.CritterCenterY = -691.179
+SodMage.Enlightenment.CritterInnerRadius = 50
+SodMage.Enlightenment.CritterOuterRadius = 600

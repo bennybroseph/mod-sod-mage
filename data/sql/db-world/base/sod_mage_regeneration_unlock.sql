@@ -25,23 +25,12 @@
 -- Idempotent and safe to re-run.
 
 -- =====================================================================
--- Clean up the previous custom ids (700200-700202), retired in favor of the real
--- SoD ids. Scoped to our own rows so existing DBs converge on re-apply.
--- =====================================================================
-DELETE FROM `item_template`          WHERE `entry` IN (700200, 700201, 700202);
-DELETE FROM `creature_loot_template` WHERE `Item` = 700201 AND `Entry` IN (450, 589, 1867);
-DELETE FROM `conditions`
-    WHERE `SourceTypeOrReferenceId` = 1 AND `SourceEntry` = 700201 AND `SourceGroup` IN (450, 589, 1867);
-DELETE FROM `npc_vendor` WHERE `item` = 700200;
-
--- =====================================================================
 -- Items (unconditional). Reused displayids carry the real SoD icons: 31029 charm
 -- (spell_holy_mindsooth), 1102 both notes (inv_scroll_03). Values per wago.tools:
--- charm Common/req 1/stacks 5; notes Uncommon/Unique/ilvl 10.
+-- charm Common/req 1/stacks 5; notes Uncommon/Unique/ilvl 10. Upsert via REPLACE --
+-- committed SQL never DELETEs (see the module CLAUDE.md SQL rules).
 -- =====================================================================
-DELETE FROM `item_template` WHERE `entry` IN (211779, 208754, 208753);
-
-INSERT INTO `item_template`
+REPLACE INTO `item_template`
     (`entry`, `class`, `subclass`, `name`, `displayid`, `Quality`, `Flags`,
      `BuyCount`, `BuyPrice`, `SellPrice`, `InventoryType`,
      `AllowableClass`, `AllowableRace`, `ItemLevel`, `RequiredLevel`,
@@ -81,9 +70,7 @@ VALUES
 -- Loot (unconditional): the scrambled notes drop from the three SoD sources.
 -- ~20% chance, single drop.
 -- =====================================================================
-DELETE FROM `creature_loot_template` WHERE `Item` = 208754 AND `Entry` IN (450, 589, 1867);
-
-INSERT INTO `creature_loot_template`
+REPLACE INTO `creature_loot_template`
     (`Entry`, `Item`, `Reference`, `Chance`, `QuestRequired`, `LootMode`, `GroupId`, `MinCount`, `MaxCount`, `Comment`)
 VALUES
     (450,  208754, 0, 20, 0, 1, 0, 1, 1, 'mod-sod-mage Regeneration rune notes'),
@@ -95,10 +82,7 @@ VALUES
 -- CONDITION_SOURCE_TYPE_CREATURE_LOOT_TEMPLATE = 1; CONDITION_CLASS = 15,
 -- ConditionValue1 = classmask (Mage = 128).
 -- =====================================================================
-DELETE FROM `conditions`
-    WHERE `SourceTypeOrReferenceId` = 1 AND `SourceEntry` = 208754 AND `SourceGroup` IN (450, 589, 1867);
-
-INSERT INTO `conditions`
+REPLACE INTO `conditions`
     (`SourceTypeOrReferenceId`, `SourceGroup`, `SourceEntry`, `SourceId`, `ElseGroup`,
      `ConditionTypeOrReference`, `ConditionTarget`, `ConditionValue1`, `ConditionValue2`, `ConditionValue3`,
      `NegativeCondition`, `Comment`)
@@ -109,10 +93,10 @@ VALUES
 
 -- =====================================================================
 -- Vendor (unconditional): the Comprehension Charm is sold by EVERY reagent
--- vendor (npcflag bit UNIT_NPC_FLAG_VENDOR_REAGENT = 2048). Set-based + idempotent.
+-- vendor (npcflag bit UNIT_NPC_FLAG_VENDOR_REAGENT = 2048). INSERT IGNORE is
+-- idempotent and non-destructive -- it adds the charm to any reagent vendor that
+-- doesn't already carry it and skips the rest (no committed DELETE).
 -- =====================================================================
-DELETE FROM `npc_vendor` WHERE `item` = 211779;
-
 INSERT IGNORE INTO `npc_vendor` (`entry`, `slot`, `item`, `maxcount`, `incrtime`, `ExtendedCost`)
 SELECT `entry`, 0, 211779, 0, 0, 0
 FROM `creature_template`
@@ -121,17 +105,11 @@ WHERE (`npcflag` & 2048) <> 0;
 -- =====================================================================
 -- Item-unlock mapping (GUARDED): using the deciphered notes (208753) unlocks
 -- the Regeneration rune (7000001). This is what flips the rune to "gated".
--- Engine-owned `rune_item_unlock`; no-op without the engine. Also drops the old
--- 700202 mapping so existing DBs converge.
+-- Engine-owned `rune_item_unlock`; no-op without the engine. ON DUPLICATE KEY
+-- UPDATE keeps it idempotent without a DELETE.
 -- =====================================================================
 SET @item_unlock_tbl := (SELECT COUNT(*) FROM information_schema.tables
                          WHERE table_schema = DATABASE() AND table_name = 'rune_item_unlock');
-
-SET @sql := IF(@item_unlock_tbl > 0,
-'DELETE FROM `rune_item_unlock` WHERE `item_id` = 700202', 'DO 0');
-PREPARE stmt FROM @sql;
-EXECUTE stmt;
-DEALLOCATE PREPARE stmt;
 
 SET @sql := IF(@item_unlock_tbl > 0,
 'INSERT INTO `rune_item_unlock` (`item_id`, `rune_id`)

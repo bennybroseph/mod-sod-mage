@@ -53,15 +53,17 @@ You need both halves. Server first, then the client patch.
    mysql -u <user> -p acore_world < modules/mod-sod-mage/data/sql/db-world/base/sod_mage_mass_regeneration.sql
    mysql -u <user> -p acore_world < modules/mod-sod-mage/data/sql/db-world/base/sod_mage_regeneration_unlock.sql
    mysql -u <user> -p acore_world < modules/mod-sod-mage/data/sql/db-world/base/sod_mage_living_flame_unlock.sql
+   mysql -u <user> -p acore_world < modules/mod-sod-mage/data/sql/db-world/base/sod_mage_enlightenment_unlock.sql
    ```
    All idempotent — safe to re-run:
    - `sod_mage_spell_dbc.sql` — seeds `spell_dbc`, `spell_script_names`, `spell_proc`.
    - `sod_mage_runes.sql` — registers the spells as engravable runes; a **no-op
      unless** the optional rune engine is installed.
    - `sod_mage_regeneration_unlock.sql` / `sod_mage_living_flame_unlock.sql` /
-     `sod_mage_mass_regeneration.sql` — the SoD rune-unlock chains. Items and loot
-     work standalone; only the rune mappings are engine-guarded. Mass Regeneration
-     also needs [`mod-sod-world`](../mod-sod-world) for the Awakened Lich (see below).
+     `sod_mage_mass_regeneration.sql` / `sod_mage_enlightenment_unlock.sql` — the
+     SoD rune-unlock chains. Items, creatures and loot work standalone; only the
+     rune mappings are engine-guarded. Mass Regeneration also needs
+     [`mod-sod-world`](../mod-sod-world) for the Awakened Lich (see below).
 4. Restart the worldserver (these tables load at startup).
 
 ### Client patch (required — otherwise the spells won't render)
@@ -121,14 +123,23 @@ With the engine present, the runes demonstrate both of the engine's
 - **Mass Regeneration** (Legs) — *drop-gated.* Kill the **Awakened Lich** in Raven
   Hill for **Spell Notes: Mass Regeneration**, then use them to unlock. The Lich
   encounter is shared content from [`mod-sod-world`](../mod-sod-world).
+- **Enlightenment** (Chest) — *event-gated* (Alliance). Out-of-place critters
+  (*Polymorphed Apprentice*) wander **all over Elwynn Forest**; **Polymorph** one to
+  free Azora's apprentice. It poofs in, thanks you, blinks out, and drops a paper —
+  click it to collect one of four **Azora Apprentice Notes** pages. Read all four
+  together (use any page) to form **Spell Notes: Enlightenment**, then use it to
+  unlock the rune. (Horde version is a later pass.)
 
 Without the engine, the items and combines still work — only the final unlock
 no-ops.
 
 This module owns the rune-id band **7000000–7000999** in the engine's catalog.
-Its items and the Lich drop use the **real SoD ids** (Comprehension Charm
-`211779`, the Spell Notes `208754`/`208753`/`211514`/`203752`/`203746`); the
-Awakened Lich (`212261`) is owned by [`mod-sod-world`](../mod-sod-world).
+Its items and drops use the **real SoD ids** (Comprehension Charm `211779`, the
+Spell Notes `208754`/`208753`/`211514`/`203752`/`203746`/`203749`, the Azora
+Apprentice Notes pages `203756`/`203960`/`203961`/`203962`); the Awakened Lich
+(`212261`) is owned by [`mod-sod-world`](../mod-sod-world). The Enlightenment
+event's critter/apprentice and paper are custom (creature `700210`, GO `700220`) —
+no SoD creature id is sourceable.
 
 ## Documentation
 

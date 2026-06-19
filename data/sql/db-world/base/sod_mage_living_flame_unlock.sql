@@ -30,9 +30,7 @@
 -- Items (unconditional). Values per wago.tools: both Uncommon, BoP, Unique,
 -- ilvl 10, Mage-only, icon inv_scroll_03 (displayid 1102).
 -- =====================================================================
-DELETE FROM `item_template` WHERE `entry` IN (203752, 203746);
-
-INSERT INTO `item_template`
+REPLACE INTO `item_template`
     (`entry`, `class`, `subclass`, `name`, `displayid`, `Quality`, `Flags`,
      `BuyCount`, `BuyPrice`, `SellPrice`, `InventoryType`,
      `AllowableClass`, `AllowableRace`, `ItemLevel`, `RequiredLevel`,
@@ -61,10 +59,7 @@ VALUES
 -- Loot (unconditional): the scrambled notes drop from the SoD sources.
 -- ~20% chance, single drop (matches the Regeneration notes' rate).
 -- =====================================================================
-DELETE FROM `creature_loot_template` WHERE `Item` = 203752
-    AND `Entry` IN (476, 1124, 1397, 1535, 1536, 1537, 3195, 3196, 3197, 3198, 3199);
-
-INSERT INTO `creature_loot_template`
+REPLACE INTO `creature_loot_template`
     (`Entry`, `Item`, `Reference`, `Chance`, `QuestRequired`, `LootMode`, `GroupId`, `MinCount`, `MaxCount`, `Comment`)
 VALUES
     (476,  203752, 0, 20, 0, 1, 0, 1, 1, 'mod-sod-mage Living Flame rune notes'),  -- Kobold Geomancer
@@ -84,11 +79,7 @@ VALUES
 -- CONDITION_SOURCE_TYPE_CREATURE_LOOT_TEMPLATE = 1; CONDITION_CLASS = 15,
 -- ConditionValue1 = classmask (Mage = 128).
 -- =====================================================================
-DELETE FROM `conditions`
-    WHERE `SourceTypeOrReferenceId` = 1 AND `SourceEntry` = 203752
-      AND `SourceGroup` IN (476, 1124, 1397, 1535, 1536, 1537, 3195, 3196, 3197, 3198, 3199);
-
-INSERT INTO `conditions`
+REPLACE INTO `conditions`
     (`SourceTypeOrReferenceId`, `SourceGroup`, `SourceEntry`, `SourceId`, `ElseGroup`,
      `ConditionTypeOrReference`, `ConditionTarget`, `ConditionValue1`, `ConditionValue2`, `ConditionValue3`,
      `NegativeCondition`, `Comment`)

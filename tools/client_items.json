@@ -58,5 +58,55 @@
     "display": 1102,
     "invtype": 0,
     "sheath": 0
+  },
+  {
+    "id": 203756,
+    "name": "Azora Apprentice Notes: Page 1",
+    "class": 15,
+    "subclass": 0,
+    "material": 2,
+    "display": 99010,
+    "invtype": 0,
+    "sheath": 0
+  },
+  {
+    "id": 203960,
+    "name": "Azora Apprentice Notes: Page 2",
+    "class": 15,
+    "subclass": 0,
+    "material": 2,
+    "display": 99010,
+    "invtype": 0,
+    "sheath": 0
+  },
+  {
+    "id": 203961,
+    "name": "Azora Apprentice Notes: Page 3",
+    "class": 15,
+    "subclass": 0,
+    "material": 2,
+    "display": 99010,
+    "invtype": 0,
+    "sheath": 0
+  },
+  {
+    "id": 203962,
+    "name": "Azora Apprentice Notes: Page 4",
+    "class": 15,
+    "subclass": 0,
+    "material": 2,
+    "display": 99010,
+    "invtype": 0,
+    "sheath": 0
+  },
+  {
+    "id": 203749,
+    "name": "Spell Notes: Enlightenment",
+    "class": 15,
+    "subclass": 0,
+    "material": 2,
+    "display": 1102,
+    "invtype": 0,
+    "sheath": 0
   }
 ]

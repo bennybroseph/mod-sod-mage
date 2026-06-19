@@ -16,10 +16,8 @@
 -- Presentation: DisplayScale 0.25 (small creeping patch) and HoverHeight -1.0 to
 -- sink the model down onto the ground (it renders raised at its native anchor).
 
-DELETE FROM `creature_template_model` WHERE `CreatureID` = 700200;
-DELETE FROM `creature_template`       WHERE `entry` = 700200;
-
-INSERT INTO `creature_template`
+-- Upsert via REPLACE -- committed SQL never DELETEs (see the module CLAUDE.md).
+REPLACE INTO `creature_template`
     (`entry`, `name`, `subname`,
      `minlevel`, `maxlevel`, `faction`, `npcflag`,
      `speed_walk`, `speed_run`, `rank`,
@@ -39,7 +37,7 @@ VALUES
      -- flags_extra 0: a visible mover, not a hidden trigger.
      0, 'npc_sod_mage_living_flame');
 
-INSERT INTO `creature_template_model`
+REPLACE INTO `creature_template_model`
     (`CreatureID`, `Idx`, `CreatureDisplayID`, `DisplayScale`, `Probability`)
 VALUES
     -- DisplayScale 0.25: small creeping patch (17522 is large at native size).
