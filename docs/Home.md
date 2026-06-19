@@ -6,10 +6,10 @@ the WotLK **3.3.5a** client (build 12340).
 
 These are developer docs: how the module is built, why it works the way it does,
 and how to extend it. For a high-level summary and install steps, see the
-[README](https://github.com/bennybroseph/mod-sod-mage) in the repo root.
+[README](https://github.com/mod-sod/mod-sod-mage) in the repo root.
 
 > **Just want to play?** You don't need these docs — the
-> [**SoD installer**](https://github.com/bennybroseph/sod-installer) sets everything
+> [**SoD installer**](https://github.com/mod-sod/sod-installer) sets everything
 > up in one command. These pages are for developers building or extending the module.
 
 ## Start here

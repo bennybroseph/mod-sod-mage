@@ -4,7 +4,7 @@ An [AzerothCore](https://www.azerothcore.org/) module that adds custom Mage spel
 inspired by **Season of Discovery** (SoD) Classic, for the WotLK **3.3.5a** client
 (build 12340).
 
-> **Just want to play?** The [**SoD installer**](https://github.com/bennybroseph/sod-installer)
+> **Just want to play?** The [**SoD installer**](https://github.com/mod-sod/sod-installer)
 > sets this module up for you in one command — it clones everything, builds the
 > client patches, and installs the addon. The manual steps below are for building
 > from source.
