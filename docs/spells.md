@@ -5,12 +5,16 @@ Reference for the spells implemented so far. IDs and mechanics are defined in
 `tools/build_sod_mage_patch.py`.
 
 **Acquisition:** by default these are GM-`.learn`-only. With the optional
-[`mod-rune-engraving`](../../mod-rune-engraving) engine installed, **Regeneration**
-and **Mass Regeneration** are also acquirable as **engravable runes** — Regeneration
-via the SoD item chain (Comprehension Charm + Spell Notes), Mass Regeneration via the
-Awakened Lich drop (the shared `mod-sod-world` encounter). **Living Flame** is
-registered as a guarded **Legs** rune (catalog only — no item/drop chain yet). See
-the [README](../README.md) for the player-facing flow.
+[`mod-rune-engraving`](../../mod-rune-engraving) engine installed, **Regeneration**,
+**Mass Regeneration**, and **Living Flame** are also acquirable as **engravable
+runes** — Regeneration and Living Flame via the SoD item chain (Comprehension Charm +
+scrambled Spell Notes dropped by Mage-only sources, decoded then used), Mass
+Regeneration via the Awakened Lich drop (the shared `mod-sod-world` encounter). Living
+Flame's scrambled notes (*Spell Notes: MILEGIN VALF*, `203752`) drop at ~20% from
+low-level caster mobs (Kobold Geomancer, Frostmane Shadowcaster/Seer, Scarlet
+Warrior/Missionary/Zealot, Burning Blade Thug/Neophyte/Fanatic/Apprentice/Cultist);
+decoding yields *Spell Notes: Living Flame* (`203746`) which unlocks the **Legs** rune.
+See the [README](../README.md) for the player-facing flow.
 
 ## Regeneration — `401417`
 

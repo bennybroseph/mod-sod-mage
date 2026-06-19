@@ -21,19 +21,40 @@
 #include "Player.h"
 #include "ScriptMgr.h"
 #include "Spell.h"
+#include "StringFormat.h"
 
-// The "combine" step of the SoD Regeneration chain: use the scrambled
-// Spell Notes: TENGI RONEERA (208754) while holding a Comprehension Charm
-// (211779) to produce the deciphered Spell Notes: Regeneration (208753). Both
-// the charm and the scrambled note are consumed (SoD charms stack to 5 / are
-// conjured in 5s -- one per decode). Pure inventory logic -- no rune-engine
-// call -- so mod-sod-mage stays usable without the engine installed.
+#include <unordered_map>
+
+// The "combine" step of the SoD note chains: use a scrambled (anagram-named)
+// Spell Notes item while holding a Comprehension Charm (211779) to produce the
+// deciphered notes. Both the charm and the scrambled note are consumed (SoD
+// charms stack to 5 / are conjured in 5s -- one per decode). Pure inventory
+// logic -- no rune-engine call -- so mod-sod-mage stays usable without the
+// engine installed.
+//
+// Data-driven so one ItemScript serves every scrambled note: each entry maps a
+// scrambled item id -> its deciphered item id + the display name for the
+// success message. All ids are the real SoD ids (wago.tools).
 enum SodMageDecodeItems
 {
-    ITEM_SOD_MAGE_CHARM            = 211779, // real SoD item ids (wago.tools)
-    ITEM_SOD_MAGE_NOTES_SCRAMBLED  = 208754,
-    ITEM_SOD_MAGE_NOTES_DECIPHERED = 208753,
+    ITEM_SOD_MAGE_CHARM = 211779,
 };
+
+struct SodMageNotePair
+{
+    uint32 deciphered;
+    char const* name;
+};
+
+namespace
+{
+    std::unordered_map<uint32, SodMageNotePair> const sSodMageNotePairs =
+    {
+        // scrambled        deciphered  deciphered display name
+        { 208754, { 208753, "Spell Notes: Regeneration" } },  // TENGI RONEERA
+        { 203752, { 203746, "Spell Notes: Living Flame" } },  // MILEGIN VALF
+    };
+}
 
 class item_sod_mage_decode_notes : public ItemScript
 {
@@ -47,6 +68,12 @@ public:
 
         ChatHandler handler(player->GetSession());
 
+        auto const it = sSodMageNotePairs.find(item->GetEntry());
+        if (it == sSodMageNotePairs.end())
+            return true; // unknown note -- nothing to do, suppress use-spell
+
+        SodMageNotePair const& pair = it->second;
+
         if (!player->HasItemCount(ITEM_SOD_MAGE_CHARM, 1))
         {
             handler.SendSysMessage(
@@ -58,12 +85,12 @@ public:
         // Consume one charm and one scrambled note, hand back the deciphered
         // version.
         player->DestroyItemCount(ITEM_SOD_MAGE_CHARM, 1, true);
-        player->DestroyItemCount(ITEM_SOD_MAGE_NOTES_SCRAMBLED, 1, true);
-        player->AddItem(ITEM_SOD_MAGE_NOTES_DECIPHERED, 1);
+        player->DestroyItemCount(item->GetEntry(), 1, true);
+        player->AddItem(pair.deciphered, 1);
 
-        handler.SendSysMessage(
+        handler.SendSysMessage(Acore::StringFormat(
             "|cFF00FF00[Spell Notes]|r The charm unscrambles the arcane shorthand "
-            "into |cFFFFD700Spell Notes: Regeneration|r.");
+            "into |cFFFFD700{}|r.", pair.name).c_str());
         return true;
     }
 };

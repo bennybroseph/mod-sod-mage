@@ -4,6 +4,11 @@ An [AzerothCore](https://www.azerothcore.org/) module that adds custom Mage spel
 inspired by **Season of Discovery** (SoD) Classic, for the WotLK **3.3.5a** client
 (build 12340).
 
+> **Just want to play?** The [**SoD installer**](https://github.com/bennybroseph/sod-installer)
+> sets this module up for you in one command — it clones everything, builds the
+> client patches, and installs the addon. The manual steps below are for building
+> from source.
+
 ## Goal
 
 Recreate SoD-style Mage abilities on a 3.3.5a server. Because the 3.3.5a client
@@ -23,11 +28,14 @@ Part of the SoD "Chronomancy" healing kit is implemented and working in-game:
   damage into healing on the beacon target (reduced on self and for multi-target
   spells), plus a small passive heal-over-time.
 
-Custom icons, visuals (the Regeneration spells reuse Drain Mana's beam; Temporal
-Beacon reuses Lightning Shield's orbiting effect), and tooltips are in place.
-Healing values match SoD where implemented (e.g. Regeneration's 165%-of-healing-
-power scaling); no broader balance pass yet. More of the kit (Chronostatic
-Preservation, Rewind Time, Temporal Anomaly) is documented and planned.
+Custom icons, visuals, and tooltips are in place (the Regeneration spells reuse
+Drain Mana's beam; Temporal Beacon reuses Lightning Shield's orbiting effect).
+
+Healing values match SoD where implemented (e.g. Regeneration's
+165%-of-healing-power scaling); there's no broader balance pass yet.
+
+More of the kit — Chronostatic Preservation, Rewind Time, Temporal Anomaly — is
+documented and planned.
 
 ## Install
 
@@ -44,15 +52,16 @@ You need both halves. Server first, then the client patch.
    mysql -u <user> -p acore_world < modules/mod-sod-mage/data/sql/db-world/base/sod_mage_runes.sql
    mysql -u <user> -p acore_world < modules/mod-sod-mage/data/sql/db-world/base/sod_mage_mass_regeneration.sql
    mysql -u <user> -p acore_world < modules/mod-sod-mage/data/sql/db-world/base/sod_mage_regeneration_unlock.sql
+   mysql -u <user> -p acore_world < modules/mod-sod-mage/data/sql/db-world/base/sod_mage_living_flame_unlock.sql
    ```
-   (Idempotent — safe to re-run. `sod_mage_spell_dbc.sql` seeds `spell_dbc`,
-   `spell_script_names`, `spell_proc`. `sod_mage_runes.sql` registers the spells
-   as engravable runes and is a **no-op unless** the optional rune engine is
-   installed. `sod_mage_mass_regeneration.sql` and `sod_mage_regeneration_unlock.sql`
-   add the two SoD rune-unlock chains (items/loot work standalone; only the rune
-   mappings are engine-guarded). The Mass Regeneration chain also needs the shared
-   [`mod-sod-world`](../mod-sod-world) module, which provides the Awakened Lich
-   encounter — see below.)
+   All idempotent — safe to re-run:
+   - `sod_mage_spell_dbc.sql` — seeds `spell_dbc`, `spell_script_names`, `spell_proc`.
+   - `sod_mage_runes.sql` — registers the spells as engravable runes; a **no-op
+     unless** the optional rune engine is installed.
+   - `sod_mage_regeneration_unlock.sql` / `sod_mage_living_flame_unlock.sql` /
+     `sod_mage_mass_regeneration.sql` — the SoD rune-unlock chains. Items and loot
+     work standalone; only the rune mappings are engine-guarded. Mass Regeneration
+     also needs [`mod-sod-world`](../mod-sod-world) for the Awakened Lich (see below).
 4. Restart the worldserver (these tables load at startup).
 
 ### Client patch (required — otherwise the spells won't render)
@@ -95,25 +104,28 @@ This module's spells can also be acquired as **engravable runes** if the reusabl
 guarded so it's a harmless no-op when the engine is absent — `mod-sod-mage`
 installs and works fine on its own (spells via `.learn`).
 
-With the engine present, the two runes demonstrate both of the engine's
-**earned-rune** paths:
+With the engine present, the runes demonstrate both of the engine's
+**earned-rune** paths — all faithful to SoD:
 
-- **Regeneration** (Chest slot) is **item-unlocked** via the faithful SoD chain
-  (`sod_mage_regeneration_unlock.sql`): buy a **Comprehension Charm** from any
-  reagent vendor, kill **Defias Pillager / Defias Renegade Mage / Dalaran
-  Apprentice** for **Spell Notes: TENGI RONEERA**, use them with the charm to make
-  **Spell Notes: Regeneration**, then use those to unlock the rune. Without the
-  engine the items/combine still exist but the final unlock no-ops.
-- **Mass Regeneration** (Legs slot) is **drop-gated**
-  (`sod_mage_mass_regeneration.sql`), faithful to SoD: kill the **Awakened Lich**
-  in Raven Hill for **Spell Notes: Mass Regeneration**, then use them to unlock the
-  rune. The Lich encounter (Dusty Coffer → Decrepit Phylactery → summon) is shared
-  content provided by [`mod-sod-world`](../mod-sod-world).
+- **Regeneration** (Chest) — *item-unlocked.* With a **Comprehension Charm** (sold
+  by reagent vendors), kill Defias Pillager / Renegade Mage / Dalaran Apprentice
+  for **Spell Notes: TENGI RONEERA**, decode them with the charm, then use the
+  result to unlock the rune.
+- **Living Flame** (Legs) — *item-unlocked,* same chain. With a charm, kill a
+  low-level caster mob (Kobold Geomancer, Frostmane Shadowcaster/Seer, Scarlet
+  Warrior/Missionary/Zealot, the Burning Blade pack) for **Spell Notes: MILEGIN
+  VALF**, decode, then use to unlock.
+- **Mass Regeneration** (Legs) — *drop-gated.* Kill the **Awakened Lich** in Raven
+  Hill for **Spell Notes: Mass Regeneration**, then use them to unlock. The Lich
+  encounter is shared content from [`mod-sod-world`](../mod-sod-world).
+
+Without the engine, the items and combines still work — only the final unlock
+no-ops.
 
 This module owns the rune-id band **7000000–7000999** in the engine's catalog.
 Its items and the Lich drop use the **real SoD ids** (Comprehension Charm
-`211779`, the Spell Notes `208754`/`208753`/`211514`); the Awakened Lich
-(`212261`) is owned by [`mod-sod-world`](../mod-sod-world).
+`211779`, the Spell Notes `208754`/`208753`/`211514`/`203752`/`203746`); the
+Awakened Lich (`212261`) is owned by [`mod-sod-world`](../mod-sod-world).
 
 ## Documentation
 
