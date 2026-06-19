@@ -1,8 +1,8 @@
 # Spells
 
 Reference for the spells implemented so far. IDs and mechanics are defined in
-`src/spell_sod_mage.h` / `src/spell_sod_mage.cpp` and the generator spec in
-`tools/build_sod_mage_patch.py`.
+`src/spell_sod_mage.h` / `src/spell_sod_mage.cpp` and the spell spec in
+`tools/sod_spells.py`.
 
 **Acquisition:** by default these are GM-`.learn`-only. With the optional
 [`mod-rune-engraving`](../../mod-rune-engraving) engine installed, **Regeneration**,
@@ -101,11 +101,11 @@ Arcane)** damage to nearby enemies along its trail.
   so the server row carries them. Carries `SPELL_ATTR1_NO_THREAT`, so the **cast
   doesn't enter combat** — only the trail's damage does. Uses a **custom cast
   visual** (`SpellVisual 700556` — a clone of Fire Blast's visual `143` with the
-  on-target impact kit removed; the generator patches `SpellVisual.dbc`): the Mage
+  on-target impact kit removed; `sod-client` patches `SpellVisual.dbc`): the Mage
   plays the instant fire-cast gesture but **nothing renders on the target** (the
   only fire is the ground patch). Note: the "3.3.5a HD" client ships a modified
   `SpellVisual.dbc` in a **base** archive (`Data/patch-s.mpq`), which outranks the
-  locale patch — so the generator writes our `SpellVisual.dbc` to **both**
+  locale patch — so `sod-client` writes our `SpellVisual.dbc` to **both**
   `Data/patch-z.mpq` (base) and `patch-enus-z.mpq`, or the override is shadowed.
 - **School:** `SchoolMask = 68` (Fire | Arcane). Because the damage carries **both**
   bits, it satisfies any Fire- *or* Arcane-gated proc — including the Mage's own
@@ -152,7 +152,7 @@ approximate. Tooltip text uses the client tokens `$o1` (periodic heal total) /
 `$d` (duration) / `$401558s1` (Living Flame's trail damage); the client adds the
 player's spell/healing power on top.
 
-Knobs live in `tools/build_sod_mage_patch.py`: the `living_flame_tick` / `regen_tick`
+Knobs live in `tools/sod_spells.py`: the `living_flame_tick` / `regen_tick`
 curves and `tooltip_fit(curve, lo=1, hi=80)` — the fit anchors (full server range).
 
 ## Config (`conf/mod_sod_mage.conf.dist`)

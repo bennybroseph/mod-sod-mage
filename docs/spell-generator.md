@@ -1,90 +1,68 @@
-# Spell generator
+# Spell spec
 
-`tools/build_sod_mage_patch.py` is the single source of truth that produces both
-halves of every spell ([why](architecture.md)): the client `Spell.dbc` (packed
-into an MPQ) and the server SQL. Defining a spell once, in the `SPELLS` list,
-keeps the two from drifting.
+The SoD spells use IDs the stock 3.3.5a client doesn't have, so two artifacts must
+agree exactly ([why](architecture.md)): the client `Spell.dbc` (packed into an MPQ)
+and the server `spell_dbc` SQL. Both are produced from **one** declaration — this
+module's spell spec — so they never drift.
 
-## What it does
+## Where the spec lives
 
-1. **Extracts** the client's *effective* DBCs (`Spell.dbc` plus the index DBCs
-   `SpellCastTimes`, `SpellDuration`, `SpellRange`, `SpellRadius`, `SpellIcon`,
-   and `SkillLineAbility.dbc`) from the client MPQs, respecting MPQ patch priority
-   (see [Gotchas](gotchas.md)).
-2. **Resolves indexes/icons at runtime** from those DBCs — e.g. "3000 ms cast" →
-   the `SpellCastTimes` index that holds 3000, the icon ID for a texture name.
-   Nothing is hardcoded, so the output is correct for whatever client it points at.
-3. **Clones a real template spell** per new spell (so every index column is valid),
-   applies the spec's `overrides`, sets the name/tooltip strings, and appends the
-   row to a patched `Spell.dbc`.
-4. **Emits SQL** to `data/sql/db-world/base/sod_mage_spell_dbc.sql` seeding three
-   tables (idempotent, scoped to our IDs): `spell_dbc`, `spell_script_names`
-   (binds C++ scripts — see [Gotchas](gotchas.md)), and `spell_proc`.
-5. **Patches `SkillLineAbility.dbc`** so spells flagged with a `skill_line` land
-   under the right spellbook tab (client-side grouping; e.g. Arcane = 237).
-6. **Packs** the patched `Spell.dbc` and `SkillLineAbility.dbc` into the client
-   patch MPQ (`patch-enus-z.mpq`) via StormLib.
+`tools/sod_spells.py` exports `build_spells(idx)`, returning the list of spells this
+module defines. It's pure data plus a little math (tooltip curves), with the shared
+WoW enum constants imported from `sod-client`.
 
-This tool does **not** patch `Item.dbc` (custom-item bag icons). WoW replaces
-whole DBCs per patch, so all SoD modules' item rows must share one file; that
-consolidated patch is owned by `mod-sod-world`. This module lists its items in
-`tools/client_items.json` — see [Gotchas](gotchas.md).
+The **build itself** — extracting the client DBCs, cloning template rows, resolving
+indices/icons, packing the MPQ, and emitting the SQL — is **not** in this module.
+It's owned by the shared [`sod-client`](https://github.com/mod-sod/sod-client)
+pipeline, which consolidates every class module's spells into one client patch.
+See its [architecture doc](https://github.com/mod-sod/sod-client/blob/main/docs/architecture.md)
+for the pipeline and the full spec-key reference.
 
-## Requirements
+## The spec keys
 
-- **Python 3** with **`pympq`** (a StormLib binding, for MPQ read/write) and the
-  read-only `mpyq` is optional. Install: `pip install pympq`.
-- The **client `Data/` folder** must be readable — i.e. the WoW client must be
-  **fully closed** (a running client locks its MPQs; see [Gotchas](gotchas.md)).
-
-## Running it
-
-```bash
-python tools/build_sod_mage_patch.py --client "<path to WoW client root>"
-# --dry-run   emit SQL + patched DBC but do not write the MPQ
-```
-
-`--client` defaults to a local path; override it for your install. The patch is
-written as a high-priority locale patch (`patch-enus-z.mpq`) so it overrides
-everything else; adjust for non-enUS clients.
-
-## The spec (`SPELLS`)
-
-Each entry is a dict. The important keys:
+Each entry in `build_spells(idx)` is a dict:
 
 | Key | Meaning |
 |-----|---------|
 | `id` | spell ID |
-| `client` | `True` → goes in the client `Spell.dbc`/MPQ; `False` → SQL only (hidden server spell) |
-| `template` | a real spell ID to clone for a valid baseline (only for client spells) |
+| `client` | `True` → client `Spell.dbc` + MPQ; `False` → SQL only (hidden server spell) |
+| `template` | a real spell ID to clone for a valid baseline (client spells) |
 | `name` | `Name_Lang_enUS` |
-| `desc` / `aura_desc` | optional client tooltip strings (`Description` / `AuraDescription`); support tooltip tokens like `$o1`, `$s1`, `$d` |
-| `script` | C++ script class name → emitted as a `spell_script_names` row |
-| `proc` | optional dict → emitted as a `spell_proc` row (required for proc auras) |
-| `overrides` | `spell_dbc` column name → value; applied to both the DBC record and the SQL |
+| `desc` / `aura_desc` | optional client tooltip strings; support tokens like `$o1`, `$s1`, `$d` |
+| `skill_line` | spellbook tab (a `SkillLineAbility` row; e.g. Arcane = 237) |
+| `script` | C++ script class → a `spell_script_names` row |
+| `bonus` | spellpower coefficients → a `spell_bonus_data` row |
+| `proc` | optional dict → a `spell_proc` row (required for proc auras) |
+| `overrides` | `spell_dbc` column name → value (applied to both the DBC and the SQL) |
 
 `overrides` keys are literal `spell_dbc` column names (e.g. `CastingTimeIndex`,
-`EffectAura_1`, `SpellVisualID_1`). The DBC field index is resolved from the
-core's `spell_dbc` table definition, so column names stay readable.
+`EffectAura_1`, `SpellVisualID_1`); the DBC field index is resolved from the core's
+`spell_dbc` table definition, so column names stay readable.
+
+`idx` is the runtime resolver the builder passes in — e.g. `idx["cast"][3000]` is
+the `SpellCastTimes` index holding 3000 ms, `idx["icon"]["spell_fire_..."]` is an
+icon ID. Nothing is hardcoded, so the output is correct for whatever client it runs
+against.
+
+## Building the patch
+
+From a checkout of `sod-client` (needs Python 3 + `pympq`, client fully closed):
+
+```bash
+python build_patch.py --server "<azerothcore root>" --client "<WoW client root>"
+```
+
+That regenerates `data/sql/db-world/base/sod_mage_spell_dbc.sql` (committed) and
+writes the consolidated client patch. The
+[SoD installer](https://github.com/mod-sod/sod-installer) runs it for you.
 
 ## Custom item icons (handled elsewhere)
 
-This generator only patches spell DBCs. The module's custom items declare their
-client `Item.dbc` rows in `tools/client_items.json` — one object each with `id`,
-`class`, `subclass`, `material`, `display` (an `ItemDisplayInfo` id whose icon you
-want), `invtype`, and `sheath`. `mod-sod-world`'s `build_sod_world_patch.py`
-aggregates these into the one shared item patch.
+Spells aside, the module's custom items declare their client `Item.dbc` rows in
+`tools/client_items.json` — one object each with `id`, `class`, `subclass`,
+`material`, `display`, `invtype`, `sheath`. `sod-client` aggregates these into the
+one shared item patch. The items' **server** rows (name, stats, vendor/loot,
+`ScriptName`) are hand-written in the rune-unlock SQL; keep `client_items.json` in
+sync with their `class`/`subclass`/`Material`/`displayid`.
 
-The items' **server** rows (name, stats, vendor/loot, `ScriptName`) are
-hand-written in the rune-unlock SQL (`sod_mage_regeneration_unlock.sql`,
-`sod_mage_living_flame_unlock.sql`, `sod_mage_mass_regeneration.sql`). Keep
-`client_items.json` in sync with their `class`/`subclass`/`Material`/`displayid`.
-
-## Output
-
-- `modules/mod-sod-mage/data/sql/db-world/base/sod_mage_spell_dbc.sql` — committed.
-- `<client>/Data/enus/patch-enus-z.mpq` — the client patch (not committed; a
-  generated client artifact) carrying the patched `Spell.dbc` and
-  `SkillLineAbility.dbc`. Scratch extractions land in `tools/_work/` (ignored).
-
-See [Adding a spell](adding-a-spell.md) for the full workflow around the spec.
+See [Adding a spell](adding-a-spell.md) for the full workflow.

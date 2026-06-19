@@ -15,13 +15,13 @@
 --   class_mask 128 = Mage           (1 << (CLASS_MAGE - 1) = 1 << 7)
 --   slot_mask   16 = Chest          (1 << RUNE_SLOT_CHEST  = 1 << 4)
 --   icon must equal spell 401417's displayed icon (the `icon_regen` texture in
---   tools/build_sod_mage_patch.py) so the rune panel matches the learned spell.
+--   tools/sod_spells.py) so the rune panel matches the learned spell.
 --
 -- Mapping for rune 7000003 (Living Flame -> spell 401556):
 --   class_mask 128 = Mage
 --   slot_mask  256 = Legs           (1 << RUNE_SLOT_LEGS   = 1 << 8)
 --   icon must equal spell 401556's displayed icon (the `icon_living_flame`
---   texture in tools/build_sod_mage_patch.py).
+--   texture in tools/sod_spells.py).
 
 SET @rune_tbl := (SELECT COUNT(*) FROM information_schema.tables
                   WHERE table_schema = DATABASE() AND table_name = 'rune_template');

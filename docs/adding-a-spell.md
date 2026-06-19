@@ -13,8 +13,8 @@ The client can only render what it already has. Before writing anything, decide:
 - **Icon** — pick an existing `SpellIcon` (the generator resolves it by texture
   name). Use the **same texture name in every place the spell's icon appears**, or
   they drift out of sync:
-  - the generator's `SpellIconID` in `tools/build_sod_mage_patch.py` (what the
-    learned spell shows in the spellbook/action bar), and
+  - the spell's `SpellIconID` in `tools/sod_spells.py` (what the learned spell
+    shows in the spellbook/action bar), and
   - if the spell is acquirable as a **rune**, the `rune_template.icon` in the rune
     SQL (`data/sql/db-world/base/sod_mage_*.sql`) — the rune panel renders this, so
     a mismatch makes the rune-list icon differ from the spell it unlocks.
@@ -26,10 +26,10 @@ The client can only render what it already has. Before writing anything, decide:
 
 Record these choices in the spec comment.
 
-## 2. Add the spec to the generator
+## 2. Add the spec
 
-In `tools/build_sod_mage_patch.py`, add an entry to `SPELLS` (see
-[Spell generator](spell-generator.md) for every key). Set `overrides` using literal
+In `tools/sod_spells.py`, add an entry to `build_spells(idx)` (see
+[Spell spec](spell-generator.md) for every key). Set `overrides` using literal
 `spell_dbc` column names.
 
 ### Non-obvious requirements (these *will* bite you)
@@ -64,7 +64,8 @@ C++ changes require a **worldserver rebuild**; pure DBC/SQL/visual changes do no
 ## 4. Regenerate and deploy
 
 ```bash
-python tools/build_sod_mage_patch.py --client "<client root>"   # client closed!
+# from a sod-client checkout; client fully closed
+python build_patch.py --server "<azerothcore root>" --client "<client root>"
 ```
 
 Then follow [Deploy & verify](deploy-and-verify.md): apply the SQL, restart the

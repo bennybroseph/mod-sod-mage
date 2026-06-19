@@ -25,8 +25,8 @@ and how to extend it. For a high-level summary and install steps, see the
 
 ## Reference
 
-- **[Spell generator](spell-generator.md)** — `tools/build_sod_mage_patch.py`: the
-  single source of truth that produces both the client MPQ and the server SQL.
+- **[Spell spec](spell-generator.md)** — `tools/sod_spells.py`: the single source
+  of truth (built by `sod-client`) for both the client MPQ and the server SQL.
 - **[Spells](spells.md)** — the implemented spells (Regeneration, Temporal Beacon
   and friends): IDs, mechanics, visuals, tooltips, config.
 - **[SoD healer kit reference](healer-kit-reference.md)** — exact SoD values for the

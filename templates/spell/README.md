@@ -7,10 +7,10 @@ copy-paste skeleton.
 
 ## Files
 
-- **`generator_spec.py`** — one `SPELLS` entry. Paste it into the `SPELLS` list in
-  [tools/build_sod_mage_patch.py](../../tools/build_sod_mage_patch.py). This is the
-  single source of truth that emits both the client `Spell.dbc` row and the server
-  `spell_dbc` / `spell_script_names` / `spell_proc` SQL.
+- **`generator_spec.py`** — one spell entry. Paste it into `build_spells(idx)` in
+  [tools/sod_spells.py](../../tools/sod_spells.py). This is the single source of
+  truth (built by the shared `sod-client` pipeline) for both the client `Spell.dbc`
+  row and the server `spell_dbc` / `spell_script_names` / `spell_proc` SQL.
 - **`spell_script.cpp`** — the `SpellScript` / `AuraScript`. Copy into `src/`, then
   add its `AddSC_*()` to [src/sod_mage_loader.cpp](../../src/sod_mage_loader.cpp).
 
@@ -23,8 +23,9 @@ copy-paste skeleton.
    you can't recolor a beam without custom art.
 3. Add the `generator_spec.py` entry, write the `spell_script.cpp`, register it in
    the loader.
-4. **Regenerate** (`python tools/build_sod_mage_patch.py --client "<client>"`,
-   client closed), apply the SQL, restart the worldserver, relaunch the client.
+4. **Regenerate** (from a `sod-client` checkout:
+   `python build_patch.py --server "<ac root>" --client "<client>"`, client
+   closed), apply the SQL, restart the worldserver, relaunch the client.
    See [docs/deploy-and-verify.md](../../docs/deploy-and-verify.md).
 
 ## Gotchas (the ones that bite)

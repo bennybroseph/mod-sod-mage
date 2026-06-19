@@ -17,17 +17,18 @@ is only for keeping the DB row byte-identical to the file.
 
 ² A custom item's name/stats/tooltip come from the server, but its **bag inventory
 icon** is resolved client-side from `Item.dbc`. New/changed custom items need the
-shared `mod-sod-world` item patch regenerated (it carries the consolidated
-`Item.dbc`), or they show a red "?" in bags. See [Gotchas](gotchas.md).
+consolidated client patch regenerated (it carries the shared `Item.dbc`), or they
+show a red "?" in bags. See [Gotchas](gotchas.md).
 
 ## 1. Regenerate artifacts
 
 ```bash
-python tools/build_sod_mage_patch.py --client "<client root>"   # client fully closed
+# from a sod-client checkout; client fully closed
+python build_patch.py --server "<azerothcore root>" --client "<client root>"
 ```
 
-Rewrites `data/sql/db-world/base/sod_mage_spell_dbc.sql` and repacks the client
-patch MPQ. See [Spell generator](spell-generator.md).
+Rewrites `data/sql/db-world/base/sod_mage_spell_dbc.sql` and repacks the one
+consolidated client patch MPQ. See [Spell spec](spell-generator.md).
 
 ## 2. Apply the SQL (idempotent)
 

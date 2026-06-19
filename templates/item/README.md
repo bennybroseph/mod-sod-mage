@@ -24,7 +24,7 @@ custom item also needs a manifest entry.
   identical in both files.
 - **Class-gate a drop** with a `conditions` row (Mage = classmask `128`) so only the
   right class rolls it — SoD class loot.
-- After editing the manifest, regenerate mod-sod-world's patch
-  (`build_sod_world_patch.py`, client closed). See
+- After editing the manifest, regenerate the consolidated client patch (from a
+  `sod-client` checkout: `build_patch.py`, client closed). See
   [docs/architecture.md](../../docs/architecture.md) and
   [docs/gotchas.md](../../docs/gotchas.md).

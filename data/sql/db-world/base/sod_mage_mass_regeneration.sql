@@ -84,7 +84,7 @@ VALUES
 -- Rune 7000002 (GUARDED) -- engine-owned `rune_template`. Re-created here (its
 -- previous home, the demo-quest SQL, is removed). No-op without the engine.
 -- The `icon` below must equal spell 412510's displayed icon (the
--- `icon_regen_large` texture in tools/build_sod_mage_patch.py) so the rune panel
+-- `icon_regen_large` texture in tools/sod_spells.py) so the rune panel
 -- matches the learned spell.
 -- =====================================================================
 SET @rune_tbl := (SELECT COUNT(*) FROM information_schema.tables

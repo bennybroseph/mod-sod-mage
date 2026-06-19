@@ -30,4 +30,4 @@ We own the rune-id band **7000000–7000999**. Items and drops use the **real So
 
 `slot_mask` is `1 << RuneSlot` (Chest = 16, Legs = 256); `class_mask` is the
 AzerothCore classmask (Mage = 128). The `icon` must equal the spell's displayed icon
-(the texture name in `tools/build_sod_mage_patch.py`) so the rune panel matches.
+(the texture name in `tools/sod_spells.py`) so the rune panel matches.

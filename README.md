@@ -67,25 +67,28 @@ You need both halves. Server first, then the client patch.
 ### Client patch (required — otherwise the spells won't render)
 
 The spells use IDs the stock client doesn't have, so the client needs a patch MPQ.
-Generate it against your own client (it reuses stock icons/visuals — no custom art):
+It's built by the shared [`sod-client`](https://github.com/mod-sod/sod-client)
+pipeline, which consolidates every SoD module's spells and items into **one** patch
+(it reuses stock icons/visuals — no custom art):
 
 ```bash
 pip install pympq                       # StormLib binding for MPQ read/write
-# Fully close the WoW client first (a running client locks its MPQs):
-python modules/mod-sod-mage/tools/build_sod_mage_patch.py --client "<path to your WoW 3.3.5a client>"
+# Fully close the WoW client first (a running client locks its MPQs); from a
+# sod-client checkout:
+python build_patch.py --server "<azerothcore root>" --client "<path to your WoW 3.3.5a client>"
 ```
 
-This writes `patch-enus-z.mpq` (spell DBCs) into the client's `Data/enus` folder
-and (re)writes the server spell SQL. It assumes an **enUS** client; adjust for
-other locales.
+This writes the consolidated `patch-z.mpq` into the client's `Data/` folders and
+(re)writes this module's server spell SQL. The
+[SoD installer](https://github.com/mod-sod/sod-installer) runs it for you.
 
 The module's **custom items** (Comprehension Charm, the Spell Notes) also need a
-client `Item.dbc` row, or they show a red "?" icon in bags. That row ships in the
-**shared item patch built by [`mod-sod-world`](../mod-sod-world)** — one
-consolidated `Item.dbc` for all SoD modules (WoW replaces whole DBCs per patch, so
-the rows can't be split across MPQs). Run that module's
-`tools/build_sod_world_patch.py` too; this module contributes its items via
-`tools/client_items.json`. Launch the client after generating both patches.
+client `Item.dbc` row, or they show a red "?" icon in bags. Those rows ship in the
+**same consolidated patch** built by `sod-client` above — one `Item.dbc` for all
+SoD modules (WoW replaces whole DBCs per patch, so the rows can't be split across
+MPQs). This module just contributes its items via `tools/client_items.json`; the
+single `build_patch.py` run handles both spells and items. Launch the client after
+generating the patch.
 
 ### Use it
 

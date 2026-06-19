@@ -12,7 +12,7 @@ so nothing here is sibling to those paths. They exist purely as references.
 
 | Folder / file | For adding | Copy into |
 |---|---|---|
-| `spell/` | a new SoD-style spell (script + generator spec) | `src/` + `tools/build_sod_mage_patch.py` |
+| `spell/` | a new SoD-style spell (script + spell spec) | `src/` + `tools/sod_spells.py` |
 | `rune/` | a rune + its unlock chain | `data/sql/db-world/base/` + `src/` |
 | `item/` | a custom item (notes, charm, reagent…) | `data/sql/db-world/base/` + `tools/client_items.json` |
 | `module_string.sql` | localized player-facing text | `data/sql/db-world/base/` |

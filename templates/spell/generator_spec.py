@@ -1,6 +1,6 @@
-# TEMPLATE — paste this dict into the SPELLS list in tools/build_sod_mage_patch.py,
-# fill the placeholders, then regenerate. Not imported or run from templates/.
-# Model: the SPELLS entries in tools/build_sod_mage_patch.py.
+# TEMPLATE — paste this dict into the build_spells(idx) return list in
+# tools/sod_spells.py, fill the placeholders, then regenerate (via sod-client).
+# Not imported or run from templates/. Model: the entries in tools/sod_spells.py.
 #
 # `overrides` keys are literal spell_dbc column names (CastingTimeIndex, EffectAura_1,
 # SpellVisualID_1, ...). Index columns (cast/dur/range/radius/icon) come from the
