@@ -45,6 +45,22 @@ if it should proc off triggered spells (e.g. Arcane Missiles' per-missile ticks)
 And `docker compose restart` does **not** run the `db-import` service (that's only
 on `up`), so changed SQL is never auto-applied by a restart — apply it yourself.
 
+## Base-points "−1" is client-only — the server applies the literal value
+
+[Pulling SoD data](pulling-sod-data.md) says to store `value − 1` (the game adds
+1). That's true **only on the client tooltip**, which inherits `EffectDieSides = 1`
+from the cloned template. The **server** `spell_dbc` row gets `EffectDieSides`
+**0** (the table default; the generator never sets it), and
+`SpellInfo::CalcValue` adds nothing when `DieSides == 0` — so the server applies
+exactly `EffectBasePoints`.
+
+Consequence: for an effect whose value must be **exact** (a flat percentage like
+Enlightenment's `+10%`), put the **literal** value in `EffectBasePoints_1` and pin
+`EffectDieSides_1: 0`, so client and server agree. The `−1` convention only matters
+when you *want* the client tooltip to read one higher than a level-0 base (rare);
+for level-scaled curves the base is 0 anyway, so it never bites them — only flat
+non-zero base points.
+
 ## C++ changes need a rebuild; data changes don't
 
 Script logic → rebuild the worldserver (`-DMODULES=static` bakes modules into the

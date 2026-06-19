@@ -59,3 +59,33 @@ SodMage.TemporalBeacon.MultiTargetPct = 20
 #
 
 SodMage.LivingFlame.SpeedPct = 40
+
+#
+#    SodMage.Enlightenment.HighManaPct
+#        Description: Enlightenment grants +10% spell damage while the Mage is
+#                     ABOVE this mana percentage. Strict threshold ("more than").
+#        Default:     70
+#
+
+SodMage.Enlightenment.HighManaPct = 70
+
+#
+#    SodMage.Enlightenment.LowManaPct
+#        Description: While BELOW this mana percentage, Enlightenment lets part of
+#                     the Mage's mana regeneration continue through the Five Second
+#                     Rule. Strict threshold ("below").
+#        Default:     30
+#
+
+SodMage.Enlightenment.LowManaPct = 30
+
+#
+#    SodMage.Enlightenment.PollMs
+#        Description: How often (ms) Enlightenment re-evaluates which mana state the
+#                     Mage is in. SoD polls every 5000ms; lower values swap the buff
+#                     faster as mana changes. Resolution is 1000ms (the passive's
+#                     periodic tick).
+#        Default:     5000
+#
+
+SodMage.Enlightenment.PollMs = 5000

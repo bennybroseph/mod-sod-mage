@@ -22,6 +22,13 @@
 --   slot_mask  256 = Legs           (1 << RUNE_SLOT_LEGS   = 1 << 8)
 --   icon must equal spell 401556's displayed icon (the `icon_living_flame`
 --   texture in tools/sod_spells.py).
+--
+-- Mapping for rune 7000004 (Enlightenment -> spell 412324):
+--   class_mask 128 = Mage
+--   slot_mask   16 = Chest          (1 << RUNE_SLOT_CHEST  = 1 << 4)
+--   412324 is the passive driver the rune teaches (SoD's "Gain the ability"
+--   entry 415729 points at it); icon must equal its displayed icon (the
+--   `icon_mindmastery` texture in tools/sod_spells.py).
 
 SET @rune_tbl := (SELECT COUNT(*) FROM information_schema.tables
                   WHERE table_schema = DATABASE() AND table_name = 'rune_template');
@@ -38,6 +45,9 @@ SET @sql := IF(@rune_tbl > 0,
      ''mod-sod-mage'', 1),
     (7000003, 401556, 128, 256, ''Living Flame'', ''spell_fire_masterofelements'',
      ''Summons a spellfire flame that creeps toward the target, dealing Fire and Arcane damage to nearby enemies.'',
+     ''mod-sod-mage'', 1),
+    (7000004, 412324, 128, 16, ''Enlightenment'', ''spell_arcane_mindmastery'',
+     ''Deal 10% more damage while above 70% mana; below 30% mana, 10% of your mana regeneration continues while casting.'',
      ''mod-sod-mage'', 1)
  ON DUPLICATE KEY UPDATE
     `spell_id`    = VALUES(`spell_id`),

@@ -97,3 +97,25 @@ TEST(SodMageLevelCurves, RegenTickHeal)
     EXPECT_EQ(RegenTickHeal(1), 21);
     EXPECT_EQ(RegenTickHeal(60), 370);
 }
+
+// --- Enlightenment mana-state gating (the two binary thresholds) ---
+TEST(SodMageEnlightenment, ShippedDefaults)
+{
+    // Defaults: high 70, low 30. Strict inequalities, so 70 and 30 are *not* in.
+    EXPECT_EQ(EnlightenmentStateFor(100, 70, 30), EnlightenmentState::HighMana);
+    EXPECT_EQ(EnlightenmentStateFor(71, 70, 30), EnlightenmentState::HighMana);
+    EXPECT_EQ(EnlightenmentStateFor(70, 70, 30), EnlightenmentState::None);
+    EXPECT_EQ(EnlightenmentStateFor(50, 70, 30), EnlightenmentState::None);
+    EXPECT_EQ(EnlightenmentStateFor(30, 70, 30), EnlightenmentState::None);
+    EXPECT_EQ(EnlightenmentStateFor(29, 70, 30), EnlightenmentState::LowMana);
+    EXPECT_EQ(EnlightenmentStateFor(0, 70, 30), EnlightenmentState::LowMana);
+}
+
+TEST(SodMageEnlightenment, CustomThresholds)
+{
+    // Admin-tuned band stays mutually exclusive at the edges.
+    EXPECT_EQ(EnlightenmentStateFor(91, 90, 10), EnlightenmentState::HighMana);
+    EXPECT_EQ(EnlightenmentStateFor(90, 90, 10), EnlightenmentState::None);
+    EXPECT_EQ(EnlightenmentStateFor(11, 90, 10), EnlightenmentState::None);
+    EXPECT_EQ(EnlightenmentStateFor(9, 90, 10), EnlightenmentState::LowMana);
+}

@@ -69,6 +69,28 @@ namespace SodMageRules
         float power = 38.258376f + 0.904195f * l + 0.161311f * l * l;
         return int32(power * 55.0f / 100.0f);
     }
+
+    // Enlightenment's mana-gated state. SoD: "+X% damage while you have more than
+    // highPct mana; below lowPct mana, part of your mana regen continues while
+    // casting." The two states are mutually exclusive (highPct > lowPct), and the
+    // inequalities are strict ("more than" / "below"), so the lowPct..highPct band
+    // (inclusive) yields None. Resolved by spell_sod_mage_enlightenment each poll.
+    enum class EnlightenmentState
+    {
+        None,
+        HighMana,   // > highPct -> +spell damage sub-aura
+        LowMana,    // < lowPct  -> regen-through-FSR sub-aura
+    };
+
+    inline EnlightenmentState EnlightenmentStateFor(int32 manaPct,
+                                                    int32 highPct, int32 lowPct)
+    {
+        if (manaPct > highPct)
+            return EnlightenmentState::HighMana;
+        if (manaPct < lowPct)
+            return EnlightenmentState::LowMana;
+        return EnlightenmentState::None;
+    }
 }
 
 #endif // MODULE_SOD_MAGE_RULES_H

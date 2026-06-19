@@ -2,7 +2,7 @@
 -- (build_patch.py) — do not edit by hand. The 4xxxxx IDs are mirrored
 -- by the consolidated client MPQ patch.
 
-DELETE FROM `spell_dbc` WHERE `ID` IN (401417,412510,400735,401405,900001,401556,401558);
+DELETE FROM `spell_dbc` WHERE `ID` IN (401417,412510,400735,401405,900001,401556,401558,412324,412326,412325);
 -- retired ids (removed across every table we own)
 DELETE FROM `spell_dbc` WHERE `ID` IN (900002);
 DELETE FROM `spell_script_names` WHERE `spell_id` IN (900002);
@@ -15,15 +15,19 @@ INSERT INTO `spell_dbc` (`ID`, `Attributes`, `AttributesEx`, `CastingTimeIndex`,
 INSERT INTO `spell_dbc` (`ID`, `Attributes`, `CastingTimeIndex`, `ProcTypeMask`, `ProcChance`, `DurationIndex`, `RangeIndex`, `EquippedItemClass`, `Effect_1`, `EffectBasePoints_1`, `ImplicitTargetA_1`, `EffectAura_1`, `Name_Lang_enUS`, `Name_Lang_Mask`, `SchoolMask`) VALUES (900001, 192, 1, 69696, 100, 21, 1, -1, 6, 0, 1, 4, 'Temporal Beacon', 16712190, 64);
 INSERT INTO `spell_dbc` (`ID`, `Attributes`, `AttributesEx`, `CastingTimeIndex`, `RecoveryTime`, `CategoryRecoveryTime`, `SpellLevel`, `DurationIndex`, `PowerType`, `ManaCost`, `RangeIndex`, `EquippedItemClass`, `Effect_1`, `Effect_2`, `Effect_3`, `EffectBasePoints_1`, `ImplicitTargetA_1`, `ImplicitTargetA_2`, `ImplicitTargetA_3`, `EffectRadiusIndex_1`, `EffectAura_1`, `EffectAura_2`, `EffectAura_3`, `SpellVisualID_1`, `SpellIconID`, `Name_Lang_enUS`, `Name_Lang_Mask`, `ManaCostPct`, `StartRecoveryCategory`, `StartRecoveryTime`, `SchoolMask`) VALUES (401556, 0, 1024, 1, 30000, 0, 0, 0, 0, 0, 35, -1, 3, 0, 0, 0, 6, 0, 0, 0, 0, 0, 0, 700556, 1920, 'Living Flame', 16712190, 11, 133, 1500, 68);
 INSERT INTO `spell_dbc` (`ID`, `Attributes`, `AttributesEx`, `CastingTimeIndex`, `SpellLevel`, `DurationIndex`, `PowerType`, `ManaCost`, `RangeIndex`, `EquippedItemClass`, `Effect_1`, `Effect_2`, `Effect_3`, `EffectBasePoints_1`, `ImplicitTargetA_1`, `ImplicitTargetA_2`, `ImplicitTargetA_3`, `EffectRadiusIndex_1`, `EffectAura_1`, `EffectAura_2`, `EffectAura_3`, `SpellIconID`, `Name_Lang_enUS`, `Name_Lang_Mask`, `ManaCostPct`, `DefenseType`, `SchoolMask`) VALUES (401558, 0, 0, 1, 0, 0, 0, 0, 6, -1, 2, 0, 0, 0, 16, 0, 0, 15, 0, 0, 0, 1920, 'Living Flame', 16712190, 0, 1, 68);
+INSERT INTO `spell_dbc` (`ID`, `Attributes`, `AttributesEx`, `CastingTimeIndex`, `SpellLevel`, `DurationIndex`, `PowerType`, `ManaCost`, `RangeIndex`, `EquippedItemClass`, `Effect_1`, `Effect_2`, `Effect_3`, `EffectBasePoints_1`, `ImplicitTargetA_1`, `ImplicitTargetA_2`, `ImplicitTargetA_3`, `EffectRadiusIndex_1`, `EffectAura_1`, `EffectAura_2`, `EffectAura_3`, `EffectAuraPeriod_1`, `SpellIconID`, `Name_Lang_enUS`, `Name_Lang_Mask`, `ManaCostPct`, `SchoolMask`) VALUES (412324, 64, 0, 1, 0, 21, 0, 0, 1, -1, 6, 0, 0, 0, 1, 0, 0, 0, 226, 0, 0, 1000, 2121, 'Enlightenment', 16712190, 0, 64);
+INSERT INTO `spell_dbc` (`ID`, `Attributes`, `AttributesEx`, `CastingTimeIndex`, `SpellLevel`, `DurationIndex`, `PowerType`, `ManaCost`, `RangeIndex`, `EquippedItemClass`, `Effect_1`, `Effect_2`, `Effect_3`, `EffectDieSides_1`, `EffectBasePoints_1`, `ImplicitTargetA_1`, `ImplicitTargetA_2`, `ImplicitTargetA_3`, `EffectRadiusIndex_1`, `EffectAura_1`, `EffectAura_2`, `EffectAura_3`, `EffectAuraPeriod_1`, `EffectMiscValue_1`, `SpellIconID`, `Name_Lang_enUS`, `Name_Lang_Mask`, `ManaCostPct`, `SchoolMask`) VALUES (412326, 0, 0, 1, 0, 21, 0, 0, 1, -1, 6, 0, 0, 0, 10, 1, 0, 0, 0, 79, 0, 0, 0, 126, 2121, 'Enlightenment', 16712190, 0, 64);
+INSERT INTO `spell_dbc` (`ID`, `Attributes`, `AttributesEx`, `CastingTimeIndex`, `SpellLevel`, `DurationIndex`, `PowerType`, `ManaCost`, `RangeIndex`, `EquippedItemClass`, `Effect_1`, `Effect_2`, `Effect_3`, `EffectDieSides_1`, `EffectBasePoints_1`, `ImplicitTargetA_1`, `ImplicitTargetA_2`, `ImplicitTargetA_3`, `EffectRadiusIndex_1`, `EffectAura_1`, `EffectAura_2`, `EffectAura_3`, `EffectAuraPeriod_1`, `SpellIconID`, `Name_Lang_enUS`, `Name_Lang_Mask`, `ManaCostPct`, `SchoolMask`) VALUES (412325, 0, 0, 1, 0, 21, 0, 0, 1, -1, 6, 0, 0, 0, 10, 1, 0, 0, 0, 134, 0, 0, 0, 2121, 'Enlightenment', 16712190, 0, 64);
 
-DELETE FROM `spell_script_names` WHERE `spell_id` IN (401417,412510,400735,900001,401556,401558);
+DELETE FROM `spell_script_names` WHERE `spell_id` IN (401417,412510,400735,900001,401556,401558,412324);
 INSERT INTO `spell_script_names` (`spell_id`, `ScriptName`) VALUES
 (401417,'spell_sod_mage_regeneration'),
 (412510,'spell_sod_mage_mass_regeneration'),
 (400735,'spell_sod_mage_temporal_beacon'),
 (900001,'spell_sod_mage_temporal_conversion'),
 (401556,'spell_sod_mage_living_flame'),
-(401558,'spell_sod_mage_living_flame_damage');
+(401558,'spell_sod_mage_living_flame_damage'),
+(412324,'spell_sod_mage_enlightenment');
 
 DELETE FROM `spell_bonus_data` WHERE `entry` IN (401417,412510,401558);
 INSERT INTO `spell_bonus_data` (`entry`, `direct_bonus`, `dot_bonus`, `ap_bonus`, `ap_dot_bonus`, `comments`) VALUES (401417, 0.0, 0.55, 0.0, 0.0, 'mod-sod-mage Regeneration');

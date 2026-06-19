@@ -14,7 +14,9 @@ Flame's scrambled notes (*Spell Notes: MILEGIN VALF*, `203752`) drop at ~20% fro
 low-level caster mobs (Kobold Geomancer, Frostmane Shadowcaster/Seer, Scarlet
 Warrior/Missionary/Zealot, Burning Blade Thug/Neophyte/Fanatic/Apprentice/Cultist);
 decoding yields *Spell Notes: Living Flame* (`203746`) which unlocks the **Legs** rune.
-See the [README](../README.md) for the player-facing flow.
+**Enlightenment** is also an engravable **Chest** rune, but with **no unlock chain** —
+it's available to every Mage as soon as the engine is installed (a deliberately
+simple rune). See the [README](../README.md) for the player-facing flow.
 
 ## Regeneration — `401417`
 
@@ -133,6 +135,38 @@ Arcane)** damage to nearby enemies along its trail.
   owner cast), in `src/spell_sod_mage_living_flame.cpp`. Living Flame's tooltip
   uses the cross-spell token `$401558s1` to show the trail's per-second damage.
 
+## Enlightenment — `412324`  *(Chest rune)*
+
+A passive that rewards mana management with two mutually-exclusive states:
+
+- **Above 70% mana:** `+10% spell damage` (sub-aura `412326`,
+  `MOD_DAMAGE_PERCENT_DONE` over all magic schools).
+- **Below 30% mana:** `10%` of your mana regeneration continues while casting
+  (sub-aura `412325`, `MOD_MANA_REGEN_INTERRUPT`).
+- **Between 30–70%:** neither — both sub-auras are stripped.
+
+SoD's *"Gain the Enlightenment ability"* entry (`415729`) just points at `412324`,
+so the rune teaches `412324` directly and no `415729` row is shipped.
+
+- **Driver:** `412324` is a passive whose only effect is a **1s periodic dummy**.
+  Each tick the script reads the Mage's mana % and toggles the two sub-auras; both
+  carry permanent duration and are applied/removed by the driver (so they persist
+  between polls and vanish cleanly on unlearn).
+- **The Five Second Rule (the subtle half):** the low-mana effect is *not* custom
+  regen code — it's `MOD_MANA_REGEN_INTERRUPT`, the same aura retail **Meditation**
+  uses. The "lockout" is the FSR: in AzerothCore it's triggered by **spending
+  mana** (`Spell::TakePower`), not by *casting* per se — a free/instant spell never
+  trips it — and it only ever throttles the **spirit/intellect** portion of regen
+  (flat mp5 from gear always flows). This aura sets how much of that spirit regen
+  survives the 5s window, and the engine recomputes regen on aura apply/remove.
+- **Icon:** `spell_arcane_mindmastery` (SoD's Mind Mastery art), shared by the
+  passive, both sub-buffs, and the rune panel.
+- **Tuning:** the thresholds and poll cadence are config keys (see below) — SoD
+  re-evaluates every 5s; the default keeps that but admins can poll faster.
+- **Script:** `spell_sod_mage_enlightenment` (AuraScript — `OnEffectPeriodic` +
+  apply/remove), in `src/spell_sod_mage_enlightenment.cpp`. The mana-state decision
+  is the pure, unit-tested `SodMageRules::EnlightenmentStateFor`.
+
 ## Dynamic tooltips
 
 Regeneration, Mass Regeneration, and Living Flame deal a **level-scaled** amount
@@ -164,6 +198,9 @@ curves and `tooltip_fit(curve, lo=1, hi=80)` — the fit anchors (full server ra
 | `SodMage.TemporalBeacon.SelfPct` | 50 | % of that healing kept when the target is the caster. |
 | `SodMage.TemporalBeacon.MultiTargetPct` | 20 | % kept when the damage came from a multi-target spell. |
 | `SodMage.LivingFlame.SpeedPct` | 40 | Living Flame creature move speed, % of normal run speed. |
+| `SodMage.Enlightenment.HighManaPct` | 70 | Above this mana %, Enlightenment grants +10% spell damage. |
+| `SodMage.Enlightenment.LowManaPct` | 30 | Below this mana %, part of mana regen continues through the FSR. |
+| `SodMage.Enlightenment.PollMs` | 5000 | How often (ms) Enlightenment re-evaluates mana state (1000ms resolution). |
 
 ## Accuracy vs. SoD (checked against wago.tools, build 1.15.8.x)
 
@@ -188,3 +225,11 @@ The "multi-target Arcane" detection (`IsTargetingArea()`) remains a heuristic.
   script; gear spellpower adds at `×1.0` on top. SoD's AreaTrigger mover has no
   3.3.5a analogue, so the homing chasing-creature is a deliberate adaptation
   (behavior-equivalent, not a 1:1 port).
+
+- **Enlightenment — accurate.** Sourced from `412324`: `+10%` spell damage above
+  `70%` mana (`412326`, `MOD_DAMAGE_PERCENT_DONE`, magic schools), and `10%` of
+  mana regen continuing while casting below `30%` mana (`412325`,
+  `MOD_MANA_REGEN_INTERRUPT`) — matching the resolved tooltip `$s1/$s2/$s3/$s4`.
+  SoD drives the state with a 5s periodic dummy; we reproduce that (poll cadence
+  configurable). The modern aura *type* enums (226/79/134) were mapped to their
+  3.3.5a meanings, not copied by number.

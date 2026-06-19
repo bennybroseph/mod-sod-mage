@@ -62,6 +62,9 @@ def build_spells(idx):
     icon_regen = idx["icon"]["inv_enchant_essencemysticalsmall"]
     icon_regen_large = idx["icon"]["inv_enchant_essencemysticallarge"]
     icon_living_flame = idx["icon"]["spell_fire_masterofelements"]
+    # Enlightenment shares one icon across the passive and both sub-buffs (and the
+    # rune panel in sod_mage_runes.sql) — keep all four in sync.
+    icon_mindmastery = idx["icon"]["spell_arcane_mindmastery"]
 
     # Client-only tooltip scaling: a linear fit of the SoD curve over the full
     # server level range 1..80 (exact at levels 1 and 80, scaling the whole way).
@@ -281,6 +284,94 @@ def build_spells(idx):
                 "ImplicitTargetA_1": TARGET_UNIT_DEST_AREA_ENEMY,
                 "EffectRadiusIndex_1": 15,  # 3 yd (SpellRadius index 15) -- narrow
                                             # trail; SoD's "nearby enemies" AoE.
+                "Effect_2": 0, "EffectAura_2": 0, "ImplicitTargetA_2": 0,
+                "Effect_3": 0, "EffectAura_3": 0, "ImplicitTargetA_3": 0,
+            },
+        },
+        {  # 412324 Enlightenment: the passive the Chest rune teaches. SoD's
+           # "Gain the Enlightenment ability" entry (415729) points at this id, so
+           # we teach 412324 directly and never ship a 415729 row. Its lone effect
+           # is a 1s periodic dummy that spell_sod_mage_enlightenment polls to toggle
+           # the two sub-auras below: above 70% mana -> 412326 (+10% spell damage),
+           # below 30% -> 412325 (regen through the Five Second Rule). Values are
+           # static (no level scaling), so the tooltip text is literal. Cloned from
+           # Rejuvenation for a valid periodic self-aura record.
+            "id": 412324, "client": True, "template": 774,  # clone Rejuvenation
+            "skill_line": SKILL_ARCANE,  # spellbook tab: Arcane
+            "name": "Enlightenment", "script": "spell_sod_mage_enlightenment",
+            "desc": "You deal 10% more damage while you have more than 70% mana. "
+                    "While below 30% mana, 10% of your mana regeneration "
+                    "continues while casting.",
+            "aura_desc": "You deal 10% more damage while you have more than 70% "
+                         "mana. While below 30% mana, 10% of your mana "
+                         "regeneration continues while casting.",
+            "overrides": {
+                "Attributes": SPELL_ATTR0_PASSIVE, "AttributesEx": 0,
+                "CastingTimeIndex": cast_instant, "DurationIndex": dur_perm,
+                "RangeIndex": range_self, "PowerType": 0, "ManaCost": 0,
+                "ManaCostPct": 0, "SchoolMask": SCHOOL_MASK_ARCANE,
+                "SpellIconID": icon_mindmastery, "EquippedItemClass": -1,
+                "SpellLevel": 0,
+                "Effect_1": EFFECT_APPLY_AURA, "EffectAura_1": AURA_PERIODIC_DUMMY,
+                "EffectAuraPeriod_1": 1000, "EffectBasePoints_1": 0,  # script-driven
+                "ImplicitTargetA_1": TARGET_UNIT_CASTER,
+                "EffectRadiusIndex_1": 0,
+                "Effect_2": 0, "EffectAura_2": 0, "ImplicitTargetA_2": 0,
+                "Effect_3": 0, "EffectAura_3": 0, "ImplicitTargetA_3": 0,
+            },
+        },
+        {  # 412326 Enlightenment (high-mana sub-buff): +10% spell damage. Pure DBC,
+           # no script — the driver (412324) applies/removes it. MiscValue = magic
+           # school mask (all six schools). Permanent duration; the driver strips it
+           # when leaving the high state. Base points are the LITERAL percent (10),
+           # not value-1: the server spell_dbc row's EffectDieSides defaults to 0, so
+           # the engine adds nothing (SpellInfo::CalcValue) — we pin DieSides 0 so the
+           # client agrees and the percent is exact (the usual -1 convention only
+           # matches a cloned template's DieSides=1 on the client tooltip).
+            "id": 412326, "client": True, "template": 774,  # clone Rejuvenation
+            "name": "Enlightenment",
+            "aura_desc": "Increases all spell damage done by 10%.",
+            "overrides": {
+                "Attributes": 0, "AttributesEx": 0,
+                "CastingTimeIndex": cast_instant, "DurationIndex": dur_perm,
+                "RangeIndex": range_self, "PowerType": 0, "ManaCost": 0,
+                "ManaCostPct": 0, "SchoolMask": SCHOOL_MASK_ARCANE,
+                "SpellIconID": icon_mindmastery, "EquippedItemClass": -1,
+                "SpellLevel": 0,
+                "Effect_1": EFFECT_APPLY_AURA,
+                "EffectAura_1": AURA_MOD_DAMAGE_PERCENT_DONE,
+                "EffectAuraPeriod_1": 0, "EffectBasePoints_1": 10,  # +10% (exact)
+                "EffectDieSides_1": 0,
+                "EffectMiscValue_1": SCHOOL_MASK_MAGIC,
+                "ImplicitTargetA_1": TARGET_UNIT_CASTER,
+                "EffectRadiusIndex_1": 0,
+                "Effect_2": 0, "EffectAura_2": 0, "ImplicitTargetA_2": 0,
+                "Effect_3": 0, "EffectAura_3": 0, "ImplicitTargetA_3": 0,
+            },
+        },
+        {  # 412325 Enlightenment (low-mana sub-buff): MOD_MANA_REGEN_INTERRUPT, so
+           # 10% of spirit-based mana regen keeps flowing during the Five Second Rule
+           # (the same aura retail Meditation uses; the engine recomputes regen on
+           # apply/remove, no custom code). Pure DBC; driver-applied. Permanent; the
+           # driver strips it when leaving the low state. Base points are the LITERAL
+           # percent (10) with DieSides pinned 0 for an exact value (see 412326).
+            "id": 412325, "client": True, "template": 774,  # clone Rejuvenation
+            "name": "Enlightenment",
+            "aura_desc": "Allows 10% of your Mana regeneration to continue "
+                         "while casting.",
+            "overrides": {
+                "Attributes": 0, "AttributesEx": 0,
+                "CastingTimeIndex": cast_instant, "DurationIndex": dur_perm,
+                "RangeIndex": range_self, "PowerType": 0, "ManaCost": 0,
+                "ManaCostPct": 0, "SchoolMask": SCHOOL_MASK_ARCANE,
+                "SpellIconID": icon_mindmastery, "EquippedItemClass": -1,
+                "SpellLevel": 0,
+                "Effect_1": EFFECT_APPLY_AURA,
+                "EffectAura_1": AURA_MOD_MANA_REGEN_INTERRUPT,
+                "EffectAuraPeriod_1": 0, "EffectBasePoints_1": 10,  # 10% (exact)
+                "EffectDieSides_1": 0,
+                "ImplicitTargetA_1": TARGET_UNIT_CASTER,
+                "EffectRadiusIndex_1": 0,
                 "Effect_2": 0, "EffectAura_2": 0, "ImplicitTargetA_2": 0,
                 "Effect_3": 0, "EffectAura_3": 0, "ImplicitTargetA_3": 0,
             },
