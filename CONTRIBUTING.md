@@ -2,16 +2,14 @@
 
 Want to add a spell, rune, or item? Start with a template.
 
-1. Open **[`templates/`](templates/README.md)** and find the content type you're
+1. Open **[`sod-class-templates`](https://github.com/mod-sod/sod-class-templates)** and find the content type you're
    adding (spell, rune, item, and a couple of helpers).
-2. Copy the skeleton into its real location and fill the `<PLACEHOLDER>` blanks. The
-   templates live outside `src/` and `data/sql/`, so they're never compiled or
-   applied — they're reference only.
+2. Copy the skeleton into its real location and fill the `<PLACEHOLDER>` blanks.
 3. Follow the full recipe in **[`docs/`](docs/Home.md)** — architecture, the spell
    generator, deploy & verify, and the gotchas that bite.
 
 Source accurate SoD values from the places listed in
-[`templates/README.md`](templates/README.md#sources-of-truth) (wago.tools, Wowhead
+[`sod-class-templates`](https://github.com/mod-sod/sod-class-templates#sources-of-truth) (wago.tools, Wowhead
 Classic, the AzerothCore wiki).
 
 Keep custom content greppable: prefix C++ classes and SQL variables with

@@ -139,7 +139,7 @@ Start at [docs/Home.md](docs/Home.md).
 ## Contributing
 
 Adding a spell, rune, or item? Start from a skeleton in
-[`templates/`](templates/README.md) — copy it into place and fill the blanks. See
+[`sod-class-templates`](https://github.com/mod-sod/sod-class-templates) — copy it into place and fill the blanks. See
 [CONTRIBUTING.md](CONTRIBUTING.md).
 
 ## Conventions
