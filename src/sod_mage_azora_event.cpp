@@ -63,6 +63,10 @@ enum SodMageAzora
     ITEM_SOD_MAGE_NOTES_ENLIGHTENMENT  = 203749, // assembled Spell Notes
 
     ZONE_ELWYNN_FOREST                 = 12,     // where the disguised critters live
+    // On reveal the creature switches from the critter faction (188) to a normal
+    // "friendly" NPC faction so the client renders its overhead speech bubble (and
+    // it's non-attackable) instead of treating it as an ambient critter.
+    FACTION_SOD_MAGE_FRIENDLY          = 35,
 };
 
 // The four Azora Apprentice Notes pages, in order (real SoD ids).
@@ -122,6 +126,7 @@ struct npc_sod_mage_wild_critter : public ScriptedAI
                 poly->SetDuration(-1);
             }
             me->SetDisplayId(PickModel(SOD_MAGE_CRITTER_MODELS));
+            me->SetFullHealth(); // converted critters have a tiny max HP -- full bar
             return;
         }
 
@@ -136,12 +141,18 @@ struct npc_sod_mage_wild_critter : public ScriptedAI
 
         switch (_phase)
         {
-            case 0: // the Blink animation, in place (no movement)
-                DoCastSelf(SPELL_SOD_MAGE_BLINK_VISUAL, true);
-                _timer = 1200;
+            case 0: // greet -- delayed a beat after the transform so the client has
+                    // settled the (re-faction'd) NPC and renders the overhead bubble
+                Talk(SAY_SOD_MAGE_APPRENTICE);
+                _timer = 2200;
                 _phase = 1;
                 break;
-            default: // drop the paper where we stand, then disappear
+            case 1: // the Blink animation, in place (no movement)
+                DoCastSelf(SPELL_SOD_MAGE_BLINK_VISUAL, true);
+                _timer = 1200;
+                _phase = 2;
+                break;
+            case 2: // drop the paper where we stand, then disappear
                 // GO_SUMMON_TIMED_DESPAWN: the paper lives on its own timer and is
                 // NOT owner-tracked, so it survives the despawn on the next line.
                 me->SummonGameObject(GO_SOD_MAGE_AZORA_PAGE,
@@ -149,7 +160,9 @@ struct npc_sod_mage_wild_critter : public ScriptedAI
                     me->GetOrientation(), 0.0f, 0.0f, 0.0f, 0.0f,
                     SOD_MAGE_AZORA_PAGE_DESPAWN_SECS, true, GO_SUMMON_TIMED_DESPAWN);
                 me->DespawnOrUnsummon();
-                _phase = 2;
+                _phase = 3;
+                break;
+            default: // done; awaiting despawn
                 break;
         }
     }
@@ -167,19 +180,21 @@ struct npc_sod_mage_wild_critter : public ScriptedAI
         _revealed = true;
 
         // Transform in place: clear the Polymorph + Wild Polymorph auras so no sheep
-        // morph plays, snap to a human model, stop, poof, and greet -- it reads as
-        // the Polymorph turning the critter into the apprentice.
+        // morph plays, switch from the critter faction to a friendly NPC (so the
+        // client shows its overhead bubble), snap to a human model, stop, and poof --
+        // it reads as the Polymorph turning the critter into the apprentice. The
+        // greeting is said a beat later (phase 0) once the client has settled.
         me->RemoveAllAuras();
         me->SetReactState(REACT_PASSIVE);
         me->SetImmuneToAll(true);
+        me->SetFaction(FACTION_SOD_MAGE_FRIENDLY);
         me->SetDisplayId(PickModel(SOD_MAGE_APPRENTICE_MODELS));
         me->GetMotionMaster()->Clear();
         me->GetMotionMaster()->MoveIdle();
         me->CastSpell(me, SPELL_SOD_MAGE_POOF, true);
-        Talk(SAY_SOD_MAGE_APPRENTICE);
 
         _phase = 0;
-        _timer = 2500; // greet, then blink out
+        _timer = 500; // brief beat, then greet (phase 0) -> blink -> drop
     }
 
 private:
@@ -311,6 +326,9 @@ public:
 
         // Adopt our template + AI in place; npc_sod_mage_wild_critter does the rest.
         creature->UpdateEntry(NPC_SOD_MAGE_POLY_CRITTER, true);
+        // Our template's max HP is tiny -- top it off so the swap doesn't show the
+        // bar draining from the original critter's health to a sliver.
+        creature->SetFullHealth();
     }
 };
 
