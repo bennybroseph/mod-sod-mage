@@ -4,8 +4,8 @@ The Season of Discovery Mage "Chronomancy" healing kit, for planning future
 implementation. Values pulled from **wago.tools**, `wow_classic_era` build
 **1.15.8.67156** (`Spell`, `SpellEffect`, `SpellMisc`, `SpellPower`,
 `SpellCastTimes/Duration/Range/Radius`). All IDs below are confirmed **not** present
-in WotLK 3.3.5a `Spell.dbc`. See [Gotchas](gotchas.md) for how to pull this data and
-[Architecture](architecture.md) for how we deliver a spell.
+in WotLK 3.3.5a `Spell.dbc`. See [Pulling SoD data](pulling-sod-data.md) for how to
+pull this data and [Architecture](architecture.md) for how we deliver a spell.
 
 > **Porting caveats (see [Pulling SoD data](pulling-sod-data.md)):** modern
 > effect/aura *type* enums differ from 3.3.5a — map by meaning, not number. Modern

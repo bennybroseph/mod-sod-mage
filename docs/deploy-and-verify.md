@@ -36,12 +36,17 @@ mysql -u <user> -p acore_world < modules/mod-sod-mage/data/sql/db-world/base/sod
 ```
 
 The module ships more base SQL than just the spells — apply all of
-`data/sql/db-world/base/` to `acore_world`: `sod_mage_spell_dbc.sql`,
-`sod_mage_module_string.sql`, `sod_mage_runes.sql` (rune catalog), and the gated
-runes `sod_mage_mass_regeneration.sql` (Awakened Lich drop) +
-`sod_mage_regeneration_unlock.sql` (item chain). The rune files are
-**engine-guarded** — a clean no-op without `mod-rune-engraving`. The Mass
-Regeneration drop also needs the shared `mod-sod-world` module (the Lich
+`data/sql/db-world/base/` to `acore_world`:
+
+- `sod_mage_spell_dbc.sql` — the spells.
+- `sod_mage_module_string.sql` — player-facing strings.
+- `sod_mage_runes.sql` — the rune catalog.
+- `sod_mage_regeneration_unlock.sql` / `sod_mage_living_flame_unlock.sql` — the
+  item-chain rune unlocks.
+- `sod_mage_mass_regeneration.sql` — the Awakened Lich drop unlock.
+
+The rune files are **engine-guarded** — a clean no-op without `mod-rune-engraving`.
+The Mass Regeneration drop also needs the shared `mod-sod-world` module (the Lich
 encounter). See the [README](../README.md) for the full list.
 
 For a Dockerized server, run it through the DB container instead (adjust names/creds

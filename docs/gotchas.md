@@ -97,12 +97,16 @@ client's `Cache`/`WDB` folder to force a refresh. Tokens like `$o1` (total perio
 A custom item's name/stats/tooltip come from the server item-query, but its **bag
 inventory icon** is resolved client-side from the client's own `Item.dbc`
 (itemId → `DisplayInfoID` → `ItemDisplayInfo` icon). A custom item id absent from
-`Item.dbc` shows the red "?" icon in bags. The **vendor** frame is unaffected — the
-vendor packet carries the displayid directly — which is the tell: vendor OK, bag
-"?". Clearing the `Cache`/`WDB` folder does **not** fix it (the icon never came from
-that cache). The fix is a client `Item.dbc` row per custom item. Those rows ship in
-the **shared item patch built by `mod-sod-world`** (one consolidated `Item.dbc` for
-all SoD modules — WoW replaces whole DBCs per patch); this module lists its items in
+`Item.dbc` shows the red "?" icon in bags.
+
+The tell: the **vendor** frame is unaffected (the vendor packet carries the
+displayid directly), so "vendor OK, bag ?" points straight at a missing `Item.dbc`
+row. Clearing the `Cache`/`WDB` folder does **not** fix it — the icon never came
+from that cache.
+
+The fix is a client `Item.dbc` row per custom item. Those rows ship in the
+**shared item patch built by `mod-sod-world`** (one consolidated `Item.dbc` for all
+SoD modules — WoW replaces whole DBCs per patch); this module lists its items in
 `tools/client_items.json`. Regenerate and reinstall that patch. Reuse an existing
 `DisplayInfoID` (find one by its `InventoryIcon` in `ItemDisplayInfo.dbc`) so no new
 art is needed.

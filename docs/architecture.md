@@ -34,14 +34,15 @@ The client has no such overlay — hence the MPQ patch.
 The module also ships custom **items** (the rune-acquisition chain — a charm and
 spell notes). Items are *mostly* server-authoritative: a custom `item_template`
 row gives the client its name, stats, and tooltip via the item-query response, so
-**no** client patch is needed for those. The one exception is the **bag inventory
-icon**, which the client resolves from its own `Item.dbc` (itemId → `DisplayInfoID`
-→ icon). A custom item id absent from `Item.dbc` shows a red "?" in bags (the
-vendor frame is fine — the vendor packet carries the displayid). Those `Item.dbc`
-rows ship in a **shared item patch built by `mod-sod-world`** (one consolidated
-`Item.dbc` for all SoD modules); this module declares its items in
-`tools/client_items.json`, reusing an existing `DisplayInfoID` (no new art). See
-[Gotchas](gotchas.md).
+**no** client patch is needed for those.
+
+The one exception is the **bag inventory icon**, which the client resolves from its
+own `Item.dbc` (itemId → `DisplayInfoID` → icon). A custom item id absent from
+`Item.dbc` shows a red "?" in bags (the vendor frame is fine — the vendor packet
+carries the displayid). Those `Item.dbc` rows ship in a **shared item patch built
+by `mod-sod-world`** (one consolidated `Item.dbc` for all SoD modules); this module
+declares its items in `tools/client_items.json`, reusing an existing `DisplayInfoID`
+(no new art). See [Gotchas](gotchas.md).
 
 ## Spell ID allocation
 

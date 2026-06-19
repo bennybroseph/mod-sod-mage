@@ -72,10 +72,12 @@ core's `spell_dbc` table definition, so column names stay readable.
 This generator only patches spell DBCs. The module's custom items declare their
 client `Item.dbc` rows in `tools/client_items.json` — one object each with `id`,
 `class`, `subclass`, `material`, `display` (an `ItemDisplayInfo` id whose icon you
-want), `invtype`, and `sheath` — which `mod-sod-world`'s
-`build_sod_world_patch.py` aggregates into the one shared item patch. The items'
-**server** rows (name, stats, vendor/loot, `ScriptName`) are hand-written in
-`sod_mage_regeneration_unlock.sql` / `sod_mage_mass_regeneration.sql`; keep
+want), `invtype`, and `sheath`. `mod-sod-world`'s `build_sod_world_patch.py`
+aggregates these into the one shared item patch.
+
+The items' **server** rows (name, stats, vendor/loot, `ScriptName`) are
+hand-written in the rune-unlock SQL (`sod_mage_regeneration_unlock.sql`,
+`sod_mage_living_flame_unlock.sql`, `sod_mage_mass_regeneration.sql`). Keep
 `client_items.json` in sync with their `class`/`subclass`/`Material`/`displayid`.
 
 ## Output
