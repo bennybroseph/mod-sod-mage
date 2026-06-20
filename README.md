@@ -133,6 +133,11 @@ With the engine present, the runes demonstrate both of the engine's
 Without the engine, the items and combines still work — only the final unlock
 no-ops.
 
+The discovery-note **drop rates** are config-tunable (`SodMage.Drops.*NotesChance`):
+Mass Regeneration notes default 100% (off the Awakened Lich elite), Living Flame and
+Regeneration notes default 20% (off leveling-zone trash). Changes apply on
+`.reload config`.
+
 This module owns the rune-id band **7000000–7000999** in the engine's catalog.
 Its items and drops use the **real SoD ids** (Comprehension Charm `211779`, the
 Spell Notes `208754`/`208753`/`211514`/`203752`/`203746`/`203749`, the Azora

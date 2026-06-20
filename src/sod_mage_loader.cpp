@@ -21,6 +21,7 @@ void AddSC_sod_mage_living_flame();
 void AddSC_sod_mage_enlightenment();
 void AddSC_sod_mage_azora_event();
 void AddSC_item_sod_mage_decode_notes();
+void AddSC_world_sod_mage_drops();
 
 // Entry point invoked by the module loader. The name must be
 // Add<folder-name-with-underscores>Scripts — the build generates the call.
@@ -31,4 +32,5 @@ void Addmod_sod_mageScripts()
     AddSC_sod_mage_enlightenment();
     AddSC_sod_mage_azora_event();
     AddSC_item_sod_mage_decode_notes();
+    AddSC_world_sod_mage_drops();
 }
