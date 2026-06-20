@@ -194,7 +194,7 @@ struct npc_sod_mage_wild_critter : public ScriptedAI
         me->CastSpell(me, SPELL_SOD_MAGE_POOF, true);
 
         _phase = 0;
-        _timer = 500; // brief beat, then greet (phase 0) -> blink -> drop
+        _timer = 250; // brief beat, then greet (phase 0) -> blink -> drop
     }
 
 private:
