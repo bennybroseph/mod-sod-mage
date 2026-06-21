@@ -34,6 +34,12 @@ def arcane_surge_min(level):
     return living_flame_tick(level) * 2.26
 
 
+# Arcane Burst (rune Arcane Blast stand-in) shares the same base curve, x[4.53..5.27];
+# the client tooltip shows the low end. Server rolls the range and caps the level at 64.
+def arcane_burst_min(level):
+    return living_flame_tick(level) * 4.53
+
+
 def regen_tick(level):
     power = 38.258376 + 0.904195 * level + 0.161311 * level * level
     return power * 55.0 / 100.0
@@ -52,6 +58,7 @@ def tooltip_fit(curve, lo=60, hi=80):
 def build_spells(idx):
     """idx: resolver giving runtime DBC index/icon values."""
     cast_3s = idx["cast"][3000]
+    cast_2500 = idx["cast"][2500]
     cast_instant = idx["cast"][0]
     dur_3s = idx["dur"][3000]
     dur_8s = idx["dur"][8000]
@@ -75,6 +82,7 @@ def build_spells(idx):
     # rune panel in sod_mage_runes.sql) — keep all four in sync.
     icon_mindmastery = idx["icon"]["spell_arcane_mindmastery"]
     icon_arcane_surge = idx["icon"]["spell_arcane_arcanetorrent"]
+    icon_arcane_blast = idx["icon"]["spell_arcane_blast"]
 
     # Client-only tooltip scaling: a linear fit of the SoD curve over the full
     # server level range 1..80 (exact at levels 1 and 80, scaling the whole way).
@@ -84,6 +92,7 @@ def build_spells(idx):
     regen_tip_int, regen_tip_flt = tooltip_fit(regen_tick, lo=1, hi=80)
     flame_tip_int, flame_tip_flt = tooltip_fit(living_flame_tick, lo=1, hi=80)
     surge_tip_int, surge_tip_flt = tooltip_fit(arcane_surge_min, lo=1, hi=80)
+    burst_tip_int, burst_tip_flt = tooltip_fit(arcane_burst_min, lo=1, hi=80)
 
     return [
         {  # 401417 Regeneration: channeled 3s single-target HoT. A channel uses
@@ -332,6 +341,7 @@ def build_spells(idx):
                 "ManaCostPct": 0, "SchoolMask": SCHOOL_MASK_ARCANE,
                 "DefenseType": 1,  # SPELL_DAMAGE_CLASS_MAGIC
                 "SpellVisualID_1": 7749,  # Arcane Blast cast+impact
+                "Speed": 0,  # instant hit (no traveling missile) so the impact plays
                 "SpellIconID": icon_arcane_surge, "EquippedItemClass": -1,
                 "SpellLevel": 0,
                 # E0: instant Arcane damage to the enemy (script sets the rolled value).
@@ -350,6 +360,102 @@ def build_spells(idx):
                 "EffectAura_3": AURA_MOD_MANA_REGEN_INTERRUPT,
                 "EffectBasePoints_3": 100, "EffectDieSides_3": 0,
                 "ImplicitTargetA_3": TARGET_UNIT_CASTER,
+            },
+        },
+        {  # 400574 Arcane Burst: the rune Arcane Blast stand-in. A castable 2.5s Arcane
+           # nuke (same base curve as Arcane Surge x[4.53..5.27]) whose level scaling is
+           # CAPPED at 64 in spell_sod_mage_arcane_burst, so it never out-scales the real
+           # Arcane Blast you train at 64. Named "Arcane Burst" to stay distinct from the
+           # real spell. Its Arcane damage feeds Temporal Beacon like any arcane spell.
+           # Granted/removed by the rune driver (900003), never taught directly. Cloned
+           # from Frostbolt for a 2.5s hard cast (school overridden to Arcane).
+            "id": 400574, "client": True, "template": 116,  # clone Frostbolt
+            "skill_line": SKILL_ARCANE,
+            "name": "Arcane Burst", "script": "spell_sod_mage_arcane_burst",
+            "desc": "Blasts the target with arcane energy, dealing $s1 Arcane damage.",
+            "client_overrides": dict(burst_tip_int),
+            "client_overrides_float": dict(burst_tip_flt),
+            "bonus": {"direct": 0.714, "dot": 0.0, "ap": 0.0, "ap_dot": 0.0},
+            "overrides": {
+                "Attributes": 0, "AttributesEx": 0,
+                "CastingTimeIndex": cast_2500, "DurationIndex": 0,
+                "RangeIndex": range_30, "PowerType": 0, "ManaCost": 0,
+                "ManaCostPct": 7, "SchoolMask": SCHOOL_MASK_ARCANE,
+                "DefenseType": 1,  # SPELL_DAMAGE_CLASS_MAGIC
+                "SpellVisualID_1": 7749,  # Arcane Blast cast+impact
+                # Speed 0 = instant hit like real Arcane Blast (no traveling missile),
+                # so the on-target impact plays. Frostbolt's clone defaulted to 28
+                # (projectile), which lost the impact visual. (int 0 == float 0.0.)
+                "Speed": 0,
+                "SpellIconID": icon_arcane_blast, "EquippedItemClass": -1,
+                "SpellLevel": 0,
+                "Effect_1": EFFECT_SCHOOL_DAMAGE, "EffectAura_1": 0,
+                "EffectBasePoints_1": 0,
+                "ImplicitTargetA_1": TARGET_UNIT_TARGET_ENEMY,
+                "EffectRadiusIndex_1": 0,
+                "Effect_2": 0, "EffectAura_2": 0, "ImplicitTargetA_2": 0,
+                "Effect_3": 0, "EffectAura_3": 0, "ImplicitTargetA_3": 0,
+            },
+        },
+        {  # 900003 Arcane Blast (rune driver): the hidden passive the Hands rune teaches.
+           # A 1s periodic dummy that polls (spell_sod_mage_arcane_blast_rune) whether the
+           # player knows the real Arcane Blast: if not, grants Arcane Burst (400574);
+           # once they do, removes Burst and applies Nether Vortex (900004). client True
+           # so the engine's addSpell is client-safe; DO_NOT_DISPLAY so it never shows in
+           # the spellbook. Cloned from Rejuvenation for a valid periodic self-aura
+           # (same as Enlightenment's driver 412324).
+            "id": 900003, "client": True, "template": 774,  # clone Rejuvenation
+            "name": "Nether Vortex", "script": "spell_sod_mage_arcane_blast_rune",
+            # Tooltip shown in the rune-engraving UI (the driver is hidden from the
+            # spellbook via DO_NOT_DISPLAY, but its name/description are what the engraver
+            # surfaces). Describes the rune's signature Nether Vortex effect.
+            "desc": "Your Arcane Blast applies the Slow spell to any target it damages "
+                    "if no target is currently affected by Slow.",
+            "aura_desc": "Your Arcane Blast applies the Slow spell to any target it "
+                         "damages if no target is currently affected by Slow.",
+            "overrides": {
+                "Attributes": SPELL_ATTR0_PASSIVE | SPELL_ATTR0_DO_NOT_DISPLAY,
+                "AttributesEx": 0,
+                "CastingTimeIndex": cast_instant, "DurationIndex": dur_perm,
+                "RangeIndex": range_self, "PowerType": 0, "ManaCost": 0,
+                "ManaCostPct": 0, "SchoolMask": SCHOOL_MASK_ARCANE,
+                "SpellIconID": icon_arcane_blast, "EquippedItemClass": -1,
+                "SpellLevel": 0,
+                "Effect_1": EFFECT_APPLY_AURA, "EffectAura_1": AURA_PERIODIC_DUMMY,
+                "EffectAuraPeriod_1": 1000, "EffectBasePoints_1": 0,
+                "ImplicitTargetA_1": TARGET_UNIT_CASTER,
+                "EffectRadiusIndex_1": 0,
+                "Effect_2": 0, "EffectAura_2": 0, "ImplicitTargetA_2": 0,
+                "Effect_3": 0, "EffectAura_3": 0, "ImplicitTargetA_3": 0,
+            },
+        },
+        {  # 900004 Nether Vortex: server-only hidden proc aura the rune driver applies
+           # once the player knows the real Arcane Blast. Procs on the player's Arcane
+           # Blast damage (CheckProc narrows to the real AB ranks in
+           # spell_sod_mage_nether_vortex) and applies Slow (31589) to the target if it
+           # isn't already slowed. Mirrors 900001's hidden-proc-aura setup.
+            "id": 900004, "client": False, "template": None,
+            "name": "Nether Vortex",
+            "script": "spell_sod_mage_nether_vortex",
+            "overrides": {
+                "Attributes": SPELL_ATTR0_PASSIVE | SPELL_ATTR0_DO_NOT_DISPLAY,
+                "CastingTimeIndex": cast_instant, "DurationIndex": dur_perm,
+                "RangeIndex": range_self, "SchoolMask": SCHOOL_MASK_ARCANE,
+                "EquippedItemClass": -1,
+                "ProcTypeMask": PROC_DONE_MAGIC_NEG | PROC_DONE_NONE_NEG,
+                "ProcChance": 100,
+                "Effect_1": EFFECT_APPLY_AURA, "EffectAura_1": AURA_DUMMY,
+                "ImplicitTargetA_1": TARGET_UNIT_CASTER,
+                "EffectBasePoints_1": 0,
+            },
+            "proc": {
+                "SchoolMask": 0, "SpellFamilyName": 0,
+                "SpellFamilyMask0": 0, "SpellFamilyMask1": 0, "SpellFamilyMask2": 0,
+                "ProcFlags": PROC_DONE_MAGIC_NEG | PROC_DONE_NONE_NEG,
+                "SpellTypeMask": 1,    # PROC_SPELL_TYPE_DAMAGE
+                "SpellPhaseMask": 2,   # PROC_SPELL_PHASE_HIT
+                "HitMask": 0, "AttributesMask": 2, "DisableEffectsMask": 0,
+                "ProcsPerMinute": 0, "Chance": 0, "Cooldown": 0, "Charges": 0,
             },
         },
         {  # 412324 Enlightenment: the passive the Chest rune teaches. SoD's

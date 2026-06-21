@@ -29,6 +29,22 @@
 --   412324 is the passive driver the rune teaches (SoD's "Gain the ability"
 --   entry 415729 points at it); icon must equal its displayed icon (the
 --   `icon_mindmastery` texture in tools/sod_spells.py).
+--
+-- Mapping for rune 7000005 (Arcane Surge -> spell 425124):
+--   class_mask 128 = Mage
+--   slot_mask  256 = Legs           (1 << RUNE_SLOT_LEGS   = 1 << 8) -- a second
+--     Legs option alongside Living Flame (7000003); you engrave one. Unlocked by
+--     Spell Notes: Arcane Surge (211386), sold by the supply officers at Friendly --
+--     see sod_mage_arcane_surge_unlock.sql. icon must equal 425124's displayed icon
+--     (`icon_arcane_surge` = spell_arcane_arcanetorrent in tools/sod_spells.py).
+--
+-- Mapping for rune 7000006 (Arcane Blast -> spell 900003, the hidden driver):
+--   class_mask 128 = Mage
+--   slot_mask   64 = Hands          (1 << RUNE_SLOT_HANDS  = 1 << 6)
+--   The rune teaches the hidden driver 900003 (DO_NOT_DISPLAY), which grants the
+--   capped stand-in Arcane Burst (400574) until the Mage trains the real Arcane Blast
+--   at 64, then swaps to Nether Vortex (900004). spell_id is the DRIVER, not 400574.
+--   icon `spell_arcane_blast` matches the granted ability's theme.
 
 SET @rune_tbl := (SELECT COUNT(*) FROM information_schema.tables
                   WHERE table_schema = DATABASE() AND table_name = 'rune_template');
@@ -48,6 +64,12 @@ SET @sql := IF(@rune_tbl > 0,
      ''mod-sod-mage'', 1),
     (7000004, 412324, 128, 16, ''Enlightenment'', ''spell_arcane_mindmastery'',
      ''Deal 10% more damage while above 70% mana; below 30% mana, 10% of your mana regeneration continues while casting.'',
+     ''mod-sod-mage'', 1),
+    (7000005, 425124, 128, 256, ''Arcane Surge'', ''spell_arcane_arcanetorrent'',
+     ''Unleash all of your remaining mana to deal Arcane damage scaled by the mana spent, then sharply boost your mana regeneration for 8 sec.'',
+     ''mod-sod-mage'', 1),
+    (7000006, 900003, 128, 64, ''Arcane Blast'', ''spell_arcane_blast'',
+     ''Grants Arcane Blast (as Arcane Burst) until you can train the real spell at level 64; afterward grants Nether Vortex, causing your Arcane Blast to apply Slow.'',
      ''mod-sod-mage'', 1)
  ON DUPLICATE KEY UPDATE
     `spell_id`    = VALUES(`spell_id`),

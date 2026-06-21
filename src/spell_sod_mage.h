@@ -49,7 +49,15 @@ enum SodMageSpells
     SPELL_SOD_MAGE_ENLIGHTENMENT_DAMAGE = 412326, // high-mana: +10% spell damage
     SPELL_SOD_MAGE_ENLIGHTENMENT_REGEN  = 412325, // low-mana: regen through the FSR
     SPELL_SOD_MAGE_ARCANE_SURGE         = 425124, // instant nuke: consume all mana, scale dmg
+    SPELL_SOD_MAGE_ARCANE_BURST         = 400574, // rune Arcane Blast stand-in (capped)
+    SPELL_SOD_MAGE_ARCANE_BLAST_RUNE    = 900003, // hidden driver: Burst <-> Nether Vortex
+    SPELL_SOD_MAGE_NETHER_VORTEX        = 900004, // proc aura: Slow on real Arcane Blast
 };
+
+// Core spells the Arcane Blast rune keys on (not ours). The real Arcane Blast ranks
+// (trainable from level 64) decide the rune's mode; Slow is what Nether Vortex applies.
+constexpr uint32 SPELL_MAGE_ARCANE_BLAST_RANKS[] = { 30451, 42894, 42896, 42897 };
+constexpr uint32 SPELL_MAGE_SLOW = 31589;
 
 // Living Flame's mover is a custom creature in the module's reserved creature
 // band (700200-700299), shown with the Fire Elemental model (a walking flame).
@@ -72,6 +80,13 @@ constexpr int32 SOD_MAGE_BEACON_MS_MASS_REGEN = 15000;
 inline bool SodMageEnabled()
 {
     return sConfigMgr->GetOption<bool>("SodMage.Enable", true);
+}
+
+// Arcane Burst stops scaling at the level the real Arcane Blast becomes trainable (64),
+// so the rune stand-in never out-scales the real spell. Admin-tunable.
+inline uint32 SodMageArcaneBlastCapLevel()
+{
+    return sConfigMgr->GetOption<uint32>("SodMage.ArcaneBlast.ScalingCapLevel", 64);
 }
 
 // Enlightenment tunables. The high/low mana thresholds gate the two sub-auras;

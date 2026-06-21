@@ -76,6 +76,22 @@ namespace SodMageRules
         return int32((13.828124f + 0.018012f * l + 0.044141f * l * l) * 2.64f);
     }
 
+    // Arcane Burst (400574) base Arcane damage: the same quadratic curve scaled by the
+    // SoD Arcane Blast tooltip's [x4.53 .. x5.27] spread. The script rolls a value in
+    // [min, max] using a level CAPPED at the real Arcane Blast learn level (64), so the
+    // stand-in never out-scales the real spell; gear spell power adds on top (0.714).
+    inline int32 ArcaneBurstMinDamage(uint8 level)
+    {
+        float l = float(level);
+        return int32((13.828124f + 0.018012f * l + 0.044141f * l * l) * 4.53f);
+    }
+
+    inline int32 ArcaneBurstMaxDamage(uint8 level)
+    {
+        float l = float(level);
+        return int32((13.828124f + 0.018012f * l + 0.044141f * l * l) * 5.27f);
+    }
+
     // Arcane Surge's damage multiplier from remaining mana: 1.0 at empty, up to
     // 1 + maxBonusPct/100 at full (SoD: +300% at full mana). Guards max == 0.
     inline float ArcaneSurgeManaMultiplier(uint32 curMana, uint32 maxMana, uint32 maxBonusPct)

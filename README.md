@@ -136,6 +136,17 @@ With the engine present, the runes demonstrate both of the engine's
   click it to collect one of four **Azora Apprentice Notes** pages. Read all four
   together (use any page) to form **Spell Notes: Enlightenment**, then use it to
   unlock the rune. (Horde version is a later pass.)
+- **Arcane Surge** (Legs) — *reputation-vendor-gated.* Reach **Friendly** with your
+  city's supply faction ([`mod-sod-world`](../mod-sod-world)'s supply officers), buy
+  **Spell Notes: Arcane Surge** from them, and use it to unlock the rune. (Mage-only
+  and bind-on-pickup, so the notes only show on the vendor for Mages.)
+- **Arcane Blast** (Hands) — *available by class* (no unlock wired yet). Engraving it is
+  **dual-mode**: until you can train the real Arcane Blast at level 64 it grants a
+  capped stand-in, **Arcane Burst** (a 2.5s Arcane nuke that feeds the Chronomancy
+  healing kit but stops scaling at 64 so it never out-paces the real spell); once you
+  know the real Arcane Blast it drops Arcane Burst and instead grants **Nether Vortex**,
+  causing your Arcane Blast to apply **Slow** to a target it hits that isn't already
+  slowed.
 
 Without the engine, the items and combines still work — only the final unlock
 no-ops.
