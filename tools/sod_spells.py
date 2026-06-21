@@ -27,6 +27,13 @@ def living_flame_tick(level):
     return 13.828124 + 0.018012 * level + 0.044141 * level * level
 
 
+# Arcane Surge shares Living Flame's base curve; the client tooltip shows the
+# low end of the [x2.26 .. x2.64] spread (server rolls the range, then scales by
+# mana in script). Used only for the $s1 tooltip fit.
+def arcane_surge_min(level):
+    return living_flame_tick(level) * 2.26
+
+
 def regen_tick(level):
     power = 38.258376 + 0.904195 * level + 0.161311 * level * level
     return power * 55.0 / 100.0
@@ -47,10 +54,12 @@ def build_spells(idx):
     cast_3s = idx["cast"][3000]
     cast_instant = idx["cast"][0]
     dur_3s = idx["dur"][3000]
+    dur_8s = idx["dur"][8000]
     dur_30s = idx["dur"][30000]
     dur_perm = idx["dur"][-1]
     range_40 = idx["range"][40.0]
     range_35 = idx["range"][35.0]
+    range_30 = idx["range"][30.0]
     range_100 = idx["range"][100.0]
     range_self = idx["range"][0.0]
     # These texture names are each spell's displayed icon. If a spell is also a
@@ -65,6 +74,7 @@ def build_spells(idx):
     # Enlightenment shares one icon across the passive and both sub-buffs (and the
     # rune panel in sod_mage_runes.sql) — keep all four in sync.
     icon_mindmastery = idx["icon"]["spell_arcane_mindmastery"]
+    icon_arcane_surge = idx["icon"]["spell_arcane_arcanetorrent"]
 
     # Client-only tooltip scaling: a linear fit of the SoD curve over the full
     # server level range 1..80 (exact at levels 1 and 80, scaling the whole way).
@@ -73,6 +83,7 @@ def build_spells(idx):
     # high mid-range. `lo`/`hi` tune the fit anchors.
     regen_tip_int, regen_tip_flt = tooltip_fit(regen_tick, lo=1, hi=80)
     flame_tip_int, flame_tip_flt = tooltip_fit(living_flame_tick, lo=1, hi=80)
+    surge_tip_int, surge_tip_flt = tooltip_fit(arcane_surge_min, lo=1, hi=80)
 
     return [
         {  # 401417 Regeneration: channeled 3s single-target HoT. A channel uses
@@ -286,6 +297,59 @@ def build_spells(idx):
                                             # trail; SoD's "nearby enemies" AoE.
                 "Effect_2": 0, "EffectAura_2": 0, "ImplicitTargetA_2": 0,
                 "Effect_3": 0, "EffectAura_3": 0, "ImplicitTargetA_3": 0,
+            },
+        },
+        {  # 425124 Arcane Surge: instant Arcane nuke that consumes ALL current mana,
+           # scaling its damage up to +300% by the fraction of mana spent, then an 8s
+           # self-buff that triples mana regen and lets it flow through the Five Second
+           # Rule. Real SoD effects (wago): E0 school damage (base curve, SP coeff 0.429),
+           # E1 MOD_POWER_REGEN_PERCENT 300, E2 MOD_MANA_REGEN_INTERRUPT ~100, E3 dummy
+           # 300 (the damage cap). 3.3.5a has only 3 effect slots, so E0-E2 live in the
+           # DBC and the +300% mana scaling (E3's job) + the mana drain are done in
+           # spell_sod_mage_arcane_surge. Base damage is Living Flame's quadratic
+           # x[2.26..2.64] (rolled in script). Castable spell for now (no rune yet; SoD
+           # engraves it on Legs). Cloned from Fire Blast for an instant enemy cast.
+            "id": 425124, "client": True, "template": 2136,  # clone Fire Blast
+            "skill_line": SKILL_ARCANE,  # spellbook tab: Arcane
+            "name": "Arcane Surge", "script": "spell_sod_mage_arcane_surge",
+            # $s1 = the base Arcane damage; the client computes it per level from the
+            # fit below. The mana scaling and consume-all are script-only, so they do
+            # NOT show in the tooltip (noted in README).
+            "desc": "Unleash all of your remaining mana in a surge of energy, dealing "
+                    "$s1 Arcane damage, increased by up to 300% based on your mana "
+                    "remaining. Afterward, your mana regeneration is activated and "
+                    "increased by 300% for $d.",
+            "client_overrides": dict(surge_tip_int),
+            "client_overrides_float": dict(surge_tip_flt),
+            # Gear spell power adds on top of the curve (wago EffectBonusCoefficient).
+            "bonus": {"direct": 0.429, "dot": 0.0, "ap": 0.0, "ap_dot": 0.0},
+            "overrides": {
+                "Attributes": 0, "AttributesEx": 0,
+                "CastingTimeIndex": cast_instant, "DurationIndex": dur_8s,
+                "RecoveryTime": 120000, "CategoryRecoveryTime": 0,
+                "StartRecoveryCategory": 133, "StartRecoveryTime": 1500,
+                "RangeIndex": range_30, "PowerType": 0, "ManaCost": 0,
+                "ManaCostPct": 0, "SchoolMask": SCHOOL_MASK_ARCANE,
+                "DefenseType": 1,  # SPELL_DAMAGE_CLASS_MAGIC
+                "SpellVisualID_1": 7749,  # Arcane Blast cast+impact
+                "SpellIconID": icon_arcane_surge, "EquippedItemClass": -1,
+                "SpellLevel": 0,
+                # E0: instant Arcane damage to the enemy (script sets the rolled value).
+                "Effect_1": EFFECT_SCHOOL_DAMAGE, "EffectAura_1": 0,
+                "EffectBasePoints_1": 0,
+                "ImplicitTargetA_1": TARGET_UNIT_TARGET_ENEMY,
+                "EffectRadiusIndex_1": 0,
+                # E1: +300% mana regen on self for the 8s duration (miscvalue 0 = mana).
+                "Effect_2": EFFECT_APPLY_AURA,
+                "EffectAura_2": AURA_MOD_POWER_REGEN_PERCENT,
+                "EffectBasePoints_2": 300, "EffectDieSides_2": 0,
+                "EffectMiscValue_2": 0,
+                "ImplicitTargetA_2": TARGET_UNIT_CASTER,
+                # E2: mana regen continues through the Five Second Rule (100%).
+                "Effect_3": EFFECT_APPLY_AURA,
+                "EffectAura_3": AURA_MOD_MANA_REGEN_INTERRUPT,
+                "EffectBasePoints_3": 100, "EffectDieSides_3": 0,
+                "ImplicitTargetA_3": TARGET_UNIT_CASTER,
             },
         },
         {  # 412324 Enlightenment: the passive the Chest rune teaches. SoD's

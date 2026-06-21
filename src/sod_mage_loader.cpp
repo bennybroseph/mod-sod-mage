@@ -18,6 +18,7 @@
 // Each script source exposes one AddSC_* function; declare them here.
 void AddSC_sod_mage_spell_scripts();
 void AddSC_sod_mage_living_flame();
+void AddSC_sod_mage_arcane_surge();
 void AddSC_sod_mage_enlightenment();
 void AddSC_sod_mage_azora_event();
 void AddSC_item_sod_mage_decode_notes();
@@ -29,6 +30,7 @@ void Addmod_sod_mageScripts()
 {
     AddSC_sod_mage_spell_scripts();
     AddSC_sod_mage_living_flame();
+    AddSC_sod_mage_arcane_surge();
     AddSC_sod_mage_enlightenment();
     AddSC_sod_mage_azora_event();
     AddSC_item_sod_mage_decode_notes();

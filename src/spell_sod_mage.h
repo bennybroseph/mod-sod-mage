@@ -48,6 +48,7 @@ enum SodMageSpells
     SPELL_SOD_MAGE_ENLIGHTENMENT        = 412324, // passive driver (periodic dummy)
     SPELL_SOD_MAGE_ENLIGHTENMENT_DAMAGE = 412326, // high-mana: +10% spell damage
     SPELL_SOD_MAGE_ENLIGHTENMENT_REGEN  = 412325, // low-mana: regen through the FSR
+    SPELL_SOD_MAGE_ARCANE_SURGE         = 425124, // instant nuke: consume all mana, scale dmg
 };
 
 // Living Flame's mover is a custom creature in the module's reserved creature

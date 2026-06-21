@@ -27,6 +27,10 @@ Part of the SoD "Chronomancy" healing kit is implemented and working in-game:
 - **Temporal Beacon** — a 30s buff that converts a share of the Mage's **Arcane**
   damage into healing on the beacon target (reduced on self and for multi-target
   spells), plus a small passive heal-over-time.
+- **Arcane Surge** — an instant Arcane nuke that **consumes all your current mana**,
+  dealing more damage the more mana you had (up to +300% at full), then an 8s buff
+  that triples mana regen and lets it flow through the Five Second Rule. The mana
+  scaling and consume-all aren't shown in the client tooltip (script-side behavior).
 
 Custom icons, visuals, and tooltips are in place (the Regeneration spells reuse
 Drain Mana's beam; Temporal Beacon reuses Lightning Shield's orbiting effect).
@@ -99,6 +103,9 @@ No trainer entry yet — learn the spells directly:
 ```
 .learn 401417    # Regeneration
 .learn 412510    # Mass Regeneration
+.learn 401556    # Living Flame
+.learn 412324    # Enlightenment
+.learn 425124    # Arcane Surge
 ```
 
 ### Optional: engravable runes (`mod-rune-engraving`)

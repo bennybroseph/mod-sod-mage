@@ -60,6 +60,34 @@ namespace SodMageRules
         return int32(13.828124f + 0.018012f * l + 0.044141f * l * l);
     }
 
+    // Arcane Surge (425124) base Arcane damage: Living Flame's quadratic curve
+    // scaled by the SoD tooltip's [x2.26 .. x2.64] spread. The script rolls a value
+    // in [min, max]; gear spell power then adds on top via spell_bonus_data (direct
+    // 0.429), and the result is scaled by the caster's mana fraction (below).
+    inline int32 ArcaneSurgeMinDamage(uint8 level)
+    {
+        float l = float(level);
+        return int32((13.828124f + 0.018012f * l + 0.044141f * l * l) * 2.26f);
+    }
+
+    inline int32 ArcaneSurgeMaxDamage(uint8 level)
+    {
+        float l = float(level);
+        return int32((13.828124f + 0.018012f * l + 0.044141f * l * l) * 2.64f);
+    }
+
+    // Arcane Surge's damage multiplier from remaining mana: 1.0 at empty, up to
+    // 1 + maxBonusPct/100 at full (SoD: +300% at full mana). Guards max == 0.
+    inline float ArcaneSurgeManaMultiplier(uint32 curMana, uint32 maxMana, uint32 maxBonusPct)
+    {
+        if (maxMana == 0)
+            return 1.0f;
+        float frac = float(curMana) / float(maxMana);
+        if (frac > 1.0f)
+            frac = 1.0f;
+        return 1.0f + (float(maxBonusPct) / 100.0f) * frac;
+    }
+
     // Regeneration (401417) / Mass Regeneration (412510) per-tick heal (3 ticks
     // over 3 sec). Tooltip total: $<power> * m1/100 * 3, m1 = 55 -> 0.55/tick of
     //   (38.258376 + 0.904195*L + 0.161311*L^2).
