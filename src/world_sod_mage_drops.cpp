@@ -43,13 +43,14 @@ namespace
         float       Default;
     };
 
-    // Defaults: Mass Regeneration 100% (off the Awakened Lich elite), Living Flame
-    // and Regeneration 20% (off leveling-zone trash).
+    // Defaults: Mass Regeneration 100% (off the Awakened Lich elite); Living Flame,
+    // Regeneration, and Living Bomb 20% (off leveling-zone trash).
     NoteDrop const NOTE_DROPS[] =
     {
         { 211514, "SodMage.Drops.MassRegenNotesChance", 100.0f },
         { 203752, "SodMage.Drops.LivingFlameNotesChance", 20.0f },
         { 208754, "SodMage.Drops.RegenNotesChance", 20.0f },
+        { 208799, "SodMage.Drops.LivingBombNotesChance", 20.0f },
     };
 }
 

@@ -146,12 +146,14 @@ SodMage.Enlightenment.CritterOuterRadius = 600
 #                     from their sources. The notes rows live in the *_unlock /
 #                     mass_regeneration SQL; these keys tune their Chance, applied at
 #                     startup and on `.reload config`. 0 disables that drop. When
-#                     SodMage.Enable = 0 all three are forced to 0.
+#                     SodMage.Enable = 0 all are forced to 0.
 #        MassRegenNotesChance   Default: 100  (off the Awakened Lich, a summoned elite)
 #        LivingFlameNotesChance Default: 20   (off leveling-zone trash)
 #        RegenNotesChance       Default: 20   (off leveling-zone trash)
+#        LivingBombNotesChance  Default: 20   (off Stonesplinter Seer, Dun Morogh)
 #
 
 SodMage.Drops.MassRegenNotesChance = 100
 SodMage.Drops.LivingFlameNotesChance = 20
 SodMage.Drops.RegenNotesChance = 20
+SodMage.Drops.LivingBombNotesChance = 20
