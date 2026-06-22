@@ -149,12 +149,13 @@ With the engine present, the runes demonstrate both of the engine's
   scaling at 64 so it never out-paces the real spell); once you know the real Arcane
   Blast it drops Arcane Burst and instead grants **Nether Vortex**, causing your Arcane
   Blast to apply **Slow** to a target it hits that isn't already slowed.
-- **Rewind Time** (Wrist) — *acquisition TBD.* An instant ability (30 sec cooldown)
-  that heals an ally carrying your **Temporal Beacon** for **all the damage they took
-  over the last 5 sec** — ineffective unless the beacon has been on them that long. It's
-  coded as a real heal, so anything that modifies healing (+healing%, healing crits)
-  applies. The unlock chain isn't built yet — for now learn it with `.learn 401462`, or
-  force-unlock the rune with the engine's `.rune` GM command.
+- **Rewind Time** (Wrist) — *vendor-gated.* Buy **Spell Notes: Rewind Time** from
+  **Grizzby**, the goblin vendor in **Ratchet** ([`mod-sod-world`](../mod-sod-world)),
+  and use it to unlock the rune. The ability (instant, 30 sec cooldown) heals an ally
+  carrying your **Temporal Beacon** for **all the damage they took over the last 5 sec**
+  — ineffective unless the beacon has been on them that long. It's coded as a real heal,
+  so anything that modifies healing (+healing%, healing crits) applies. (Mage-only and
+  bind-on-pickup, so the notes only show on Grizzby for Mages.)
 
 Without the engine, the items and combines still work — only the final unlock
 no-ops.
@@ -166,9 +167,10 @@ Regeneration notes default 20% (off leveling-zone trash). Changes apply on
 
 This module owns the rune-id band **7000000–7000999** in the engine's catalog.
 Its items and drops use the **real SoD ids** (Comprehension Charm `211779`, the
-Spell Notes `208754`/`208753`/`211514`/`203752`/`203746`/`203749`, the Azora
-Apprentice Notes pages `203756`/`203960`/`203961`/`203962`); the Awakened Lich
-(`212261`) is owned by [`mod-sod-world`](../mod-sod-world). The Enlightenment
+Spell Notes `208754`/`208753`/`211514`/`203752`/`203746`/`203749`/`211386`/`211691`/`210654`,
+the Azora Apprentice Notes pages `203756`/`203960`/`203961`/`203962`); the Awakened Lich
+(`212261`) and **Grizzby** (`211653`, the Ratchet vendor for Spell Notes: Rewind Time)
+are owned by [`mod-sod-world`](../mod-sod-world). The Enlightenment
 event's critter/apprentice and paper are custom (creature `700210`, GO `700220`) —
 no SoD creature id is sourceable.
 

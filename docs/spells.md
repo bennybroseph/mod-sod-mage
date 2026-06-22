@@ -120,8 +120,11 @@ SoD's rune-grant `401734` teaches.
   cheap `HasAura` check. Entries prune to the window.
 - **Scripts:** `unit_sod_mage_rewind_time` (the damage log) + `spell_sod_mage_rewind_time`
   (`OnCheckCast` + `OnEffectLaunchTarget` heal), in `src/spell_sod_mage_rewind_time.cpp`.
-- **Acquisition:** not built yet — `.learn 401462`, or `.rune` to force-unlock the
-  Wrist rune (`7000007`).
+- **Acquisition:** *vendor-gated.* **Spell Notes: Rewind Time** (`210654`, Mage-only,
+  BoP) is sold by **Grizzby** in Ratchet (`mod-sod-world` creature `211653`); using it
+  unlocks the Wrist rune (`7000007`) via the engine's `item_rune_unlock`. The item +
+  rune mapping live in `sod_mage_rewind_time_unlock.sql`; Grizzby's `npc_vendor` stock
+  row is there too, while his creature/spawn are in `mod-sod-world`.
 
 ## Living Flame — `401556`
 
