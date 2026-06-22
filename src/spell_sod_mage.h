@@ -136,4 +136,9 @@ inline uint32 SodMageRewindTimeWindowMs()
     return sConfigMgr->GetOption<uint32>("SodMage.RewindTime.WindowSeconds", 5) * 1000;
 }
 
+// Drops a unit's Rewind Time damage log (defined in spell_sod_mage_rewind_time.cpp).
+// Called when a unit's last Temporal Beacon falls off, so the log stays bounded to
+// currently-beaconed units.
+void SodMageForgetRewindLog(ObjectGuid const& guid);
+
 #endif // MODULE_SOD_MAGE_H

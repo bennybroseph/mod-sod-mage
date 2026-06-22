@@ -16,15 +16,27 @@
  */
 
 #include "spell_sod_mage.h"
+#include "ObjectAccessor.h"
 #include "SpellInfo.h"
 #include "Unit.h"
 #include <algorithm>
+#include <unordered_map>
 
 // 900004 Nether Vortex: the hidden passive the rune driver (900003) applies once the
-// Mage knows the real Arcane Blast. When their Arcane Blast deals damage, it applies
-// Slow (31589) to the struck target if that target isn't already slowed. A Cataclysm
-// talent ported to keep the Hands rune relevant after the stand-in (Arcane Burst) is
-// retired. Mirrors the Temporal Beacon conversion proc.
+// Mage knows the real Arcane Blast. Each Arcane Blast hit (re)applies Slow (31589) to
+// the struck target, but only ONE target stays slowed at a time -- hitting a new target
+// moves the Slow off the old one (per the rune tooltip: "...if no target is currently
+// affected by Slow"). A Cataclysm talent ported to keep the Hands rune relevant after
+// the stand-in (Arcane Burst) is retired. Mirrors the Temporal Beacon conversion proc.
+namespace
+{
+    // The single target each Mage currently has Slowed via Nether Vortex (caster GUID
+    // -> Slow target GUID). Touched only from the Mage's own map update (the proc and
+    // the aura-remove hook), matching the unlocked-global-map convention elsewhere in
+    // this module (single-threaded map update, MapUpdate.Threads = 1).
+    std::unordered_map<ObjectGuid, ObjectGuid> sNetherVortexSlowTarget;
+}
+
 class spell_sod_mage_nether_vortex : public AuraScript
 {
     PrepareAuraScript(spell_sod_mage_nether_vortex);
@@ -55,11 +67,23 @@ class spell_sod_mage_nether_vortex : public AuraScript
         if (!caster || !target || !target->IsAlive())
             return;
 
-        // Leave an existing Slow alone; only apply when the target isn't slowed.
-        if (target->HasAura(SPELL_MAGE_SLOW))
-            return;
+        // Move our Slow off whatever target previously held it (if it's a different
+        // unit), so only one target is ever slowed -- then (re)apply to the struck
+        // target, refreshing it on a repeat hit like a re-cast.
+        auto it = sNetherVortexSlowTarget.find(caster->GetGUID());
+        if (it != sNetherVortexSlowTarget.end() && it->second != target->GetGUID())
+            if (Unit* prev = ObjectAccessor::GetUnit(*caster, it->second))
+                prev->RemoveAura(SPELL_MAGE_SLOW, caster->GetGUID());
 
         caster->CastSpell(target, SPELL_MAGE_SLOW, true);
+        sNetherVortexSlowTarget[caster->GetGUID()] = target->GetGUID();
+    }
+
+    // Forget the tracked target when the rune is un-engraved (aura removed).
+    void HandleRemove(AuraEffect const* /*aurEff*/, AuraEffectHandleModes /*mode*/)
+    {
+        if (Unit* caster = GetTarget())
+            sNetherVortexSlowTarget.erase(caster->GetGUID());
     }
 
     void Register() override
@@ -68,6 +92,9 @@ class spell_sod_mage_nether_vortex : public AuraScript
         OnEffectProc += AuraEffectProcFn(
             spell_sod_mage_nether_vortex::HandleProc,
             EFFECT_0, SPELL_AURA_DUMMY);
+        AfterEffectRemove += AuraEffectRemoveFn(
+            spell_sod_mage_nether_vortex::HandleRemove,
+            EFFECT_0, SPELL_AURA_DUMMY, AURA_EFFECT_HANDLE_REAL);
     }
 };
 

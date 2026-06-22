@@ -98,6 +98,38 @@ TEST(SodMageLevelCurves, RegenTickHeal)
     EXPECT_EQ(RegenTickHeal(60), 370);
 }
 
+TEST(SodMageLevelCurves, ArcaneSurgeDamage)
+{
+    // Living Flame's curve x[2.26 .. 2.64] (the base before mana scaling).
+    EXPECT_EQ(ArcaneSurgeMinDamage(1), 31);
+    EXPECT_EQ(ArcaneSurgeMaxDamage(1), 36);
+    EXPECT_EQ(ArcaneSurgeMinDamage(64), 442);
+    EXPECT_EQ(ArcaneSurgeMaxDamage(64), 516);
+    EXPECT_LT(ArcaneSurgeMinDamage(64), ArcaneSurgeMaxDamage(64));
+    EXPECT_GT(ArcaneSurgeMinDamage(64), ArcaneSurgeMinDamage(1)); // scales with level
+}
+
+TEST(SodMageLevelCurves, ArcaneBurstDamage)
+{
+    // Living Flame's curve x[4.53 .. 5.27]. The SpellScript caps the level it feeds
+    // in at the real Arcane Blast learn level (64); the curve itself is unbounded, so
+    // 64 is the value used at and above the cap.
+    EXPECT_EQ(ArcaneBurstMinDamage(21), 152);
+    EXPECT_EQ(ArcaneBurstMaxDamage(21), 177);
+    EXPECT_EQ(ArcaneBurstMinDamage(64), 886);
+    EXPECT_EQ(ArcaneBurstMaxDamage(64), 1031);
+    EXPECT_LT(ArcaneBurstMinDamage(64), ArcaneBurstMaxDamage(64));
+    EXPECT_GT(ArcaneBurstMinDamage(64), ArcaneBurstMinDamage(21)); // scales with level
+}
+
+TEST(SodMageLevelCurves, ArcaneBurstHitsHarderThanSurge)
+{
+    // Arcane Blast (Burst, x4.53-5.27) is a bigger base nuke than Arcane Surge
+    // (x2.26-2.64) at the same level (before Surge's mana multiplier).
+    EXPECT_GT(ArcaneBurstMinDamage(64), ArcaneSurgeMinDamage(64));
+    EXPECT_GT(ArcaneBurstMaxDamage(64), ArcaneSurgeMaxDamage(64));
+}
+
 // --- Enlightenment mana-state gating (the two binary thresholds) ---
 TEST(SodMageEnlightenment, ShippedDefaults)
 {

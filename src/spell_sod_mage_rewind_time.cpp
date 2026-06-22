@@ -55,6 +55,13 @@ namespace
     }
 }
 
+// Called from the Temporal Beacon AuraScript when a unit's last beacon ends, so the
+// log doesn't retain a (slowly accumulating) entry for every unit ever beaconed.
+void SodMageForgetRewindLog(ObjectGuid const& guid)
+{
+    sBeaconDamageLog.erase(guid);
+}
+
 // Records damage taken by units that carry a Temporal Beacon. Cheap checks first so
 // the common (non-beaconed) case bails before any config read or map access.
 class unit_sod_mage_rewind_time : public UnitScript

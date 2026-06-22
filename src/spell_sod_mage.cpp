@@ -155,6 +155,12 @@ class spell_sod_mage_temporal_beacon : public AuraScript
         if (!target)
             return;
 
+        // If this was the unit's last Temporal Beacon (this aura is already removed
+        // here, so HasAura is true only if another caster's beacon remains), drop its
+        // Rewind Time damage log so that store stays bounded to beaconed units.
+        if (!target->HasAura(SPELL_SOD_MAGE_TEMPORAL_BEACON))
+            SodMageForgetRewindLog(target->GetGUID());
+
         auto it = sTemporalBeaconTargets.find(GetCasterGUID());
         if (it == sTemporalBeaconTargets.end())
             return;
