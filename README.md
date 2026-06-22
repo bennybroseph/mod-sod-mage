@@ -149,6 +149,12 @@ With the engine present, the runes demonstrate both of the engine's
   scaling at 64 so it never out-paces the real spell); once you know the real Arcane
   Blast it drops Arcane Burst and instead grants **Nether Vortex**, causing your Arcane
   Blast to apply **Slow** to a target it hits that isn't already slowed.
+- **Rewind Time** (Wrist) — *acquisition TBD.* An instant ability (30 sec cooldown)
+  that heals an ally carrying your **Temporal Beacon** for **all the damage they took
+  over the last 5 sec** — ineffective unless the beacon has been on them that long. It's
+  coded as a real heal, so anything that modifies healing (+healing%, healing crits)
+  applies. The unlock chain isn't built yet — for now learn it with `.learn 401462`, or
+  force-unlock the rune with the engine's `.rune` GM command.
 
 Without the engine, the items and combines still work — only the final unlock
 no-ops.

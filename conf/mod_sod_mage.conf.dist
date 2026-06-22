@@ -91,6 +91,17 @@ SodMage.Enlightenment.LowManaPct = 30
 SodMage.Enlightenment.PollMs = 5000
 
 #
+#    SodMage.RewindTime.WindowSeconds
+#        Description: Rewind Time looks back this many seconds: it heals the beaconed
+#                     target for the damage they took within the window, and is
+#                     ineffective unless your Temporal Beacon has been on them for at
+#                     least this long ("had a Temporal Beacon 5 sec ago"). SoD is 5.
+#        Default:     5
+#
+
+SodMage.RewindTime.WindowSeconds = 5
+
+#
 #    Disguised-critter seeding (the Enlightenment acquisition event).
 #    As real Elwynn Forest critters spawn, a share are converted in place into the
 #    disguised "Polymorphed Apprentice". The originals are untouched in the DB and

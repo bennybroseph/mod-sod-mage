@@ -23,6 +23,7 @@ void AddSC_sod_mage_arcane_burst();
 void AddSC_sod_mage_arcane_blast_rune();
 void AddSC_sod_mage_nether_vortex();
 void AddSC_player_sod_mage_arcane_crystals();
+void AddSC_sod_mage_rewind_time();
 void AddSC_sod_mage_enlightenment();
 void AddSC_sod_mage_azora_event();
 void AddSC_item_sod_mage_decode_notes();
@@ -39,6 +40,7 @@ void Addmod_sod_mageScripts()
     AddSC_sod_mage_arcane_blast_rune();
     AddSC_sod_mage_nether_vortex();
     AddSC_player_sod_mage_arcane_crystals();
+    AddSC_sod_mage_rewind_time();
     AddSC_sod_mage_enlightenment();
     AddSC_sod_mage_azora_event();
     AddSC_item_sod_mage_decode_notes();

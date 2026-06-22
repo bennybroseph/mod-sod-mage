@@ -95,6 +95,34 @@ The instant triggered heal that the conversion aura casts (the real SoD ID). Hea
 amount is supplied at cast time (`SPELLVALUE_BASE_POINT0`). Its own ID so it shows
 correctly in the combat log and benefits from healing mods. No script.
 
+## Rewind Time — `401462`  *(Wrist rune)*
+
+An instant ability that "rewinds" a beaconed ally's recent damage. The active spell
+SoD's rune-grant `401734` teaches.
+
+- **Cast:** instant, 30s cooldown, single friendly target, Arcane. No power cost
+  (the CDN tooltip lists none). Range is the beacon's `100yd` (SoD shows 60yd; using
+  the beacon range lets it reach any still-valid beacon target — a benign tooltip gap).
+- **Effect:** heals the target for the **total damage they took over the last 5 sec**
+  (`SodMage.RewindTime.WindowSeconds`). **Ineffective** unless *your* Temporal Beacon
+  (`400735`) has been on them for the full window — matching SoD's *"did not have a
+  Temporal Beacon 5 seconds ago"*; the cast still resolves and burns the cooldown.
+  Casting on a target without your beacon is blocked in `CheckCast` (no wasted CD).
+- **Real heal:** `Effect_1 = SPELL_EFFECT_HEAL`, base 0; the script computes the
+  damage sum and injects it with `SetEffectValue` in the launch phase, so
+  `EffectHeal` then runs it through `SpellHealingBonusDone`/`Taken` and the heal crit
+  roll — **anything that modifies healing applies**. `spell_bonus_data` is an explicit
+  `0/0/0/0` so there's **no spellpower scaling** (the heal equals the damage taken);
+  without that row an instant heal would inherit AzerothCore's default ~43% coefficient.
+- **Damage tracking:** a global `UnitScript::OnDamage` hook logs each damage event
+  (final, post-mitigation) into a per-GUID rolling deque, but **only for units that
+  carry a Temporal Beacon** — so the map stays bounded and the common case bails on a
+  cheap `HasAura` check. Entries prune to the window.
+- **Scripts:** `unit_sod_mage_rewind_time` (the damage log) + `spell_sod_mage_rewind_time`
+  (`OnCheckCast` + `OnEffectLaunchTarget` heal), in `src/spell_sod_mage_rewind_time.cpp`.
+- **Acquisition:** not built yet — `.learn 401462`, or `.rune` to force-unlock the
+  Wrist rune (`7000007`).
+
 ## Living Flame — `401556`
 
 A spellfire flame that creeps toward the target, dealing **Spellfire (Fire +
@@ -234,6 +262,7 @@ curves and `tooltip_fit(curve, lo=1, hi=80)` — the fit anchors (full server ra
 | `SodMage.Enlightenment.HighManaPct` | 70 | Above this mana %, Enlightenment grants +10% spell damage. |
 | `SodMage.Enlightenment.LowManaPct` | 30 | Below this mana %, part of mana regen continues through the FSR. |
 | `SodMage.Enlightenment.PollMs` | 5000 | How often (ms) Enlightenment re-evaluates mana state (1000ms resolution). |
+| `SodMage.RewindTime.WindowSeconds` | 5 | Rewind Time's lookback: damage window summed, and the minimum beacon age for it to take effect. |
 
 ## Accuracy vs. SoD (checked against wago.tools, build 1.15.8.x)
 

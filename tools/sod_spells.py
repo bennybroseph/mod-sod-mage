@@ -84,6 +84,7 @@ def build_spells(idx):
     icon_mindmastery = idx["icon"]["spell_arcane_mindmastery"]
     icon_arcane_surge = idx["icon"]["spell_arcane_arcanetorrent"]
     icon_arcane_blast = idx["icon"]["spell_arcane_blast"]
+    icon_rewind = idx["icon"]["spell_holy_borrowedtime"]
 
     # Client-only tooltip scaling: a linear fit of the SoD curve over the full
     # server level range 1..80 (exact at levels 1 and 80, scaling the whole way).
@@ -189,6 +190,40 @@ def build_spells(idx):
                 "SpellIconID": icon_beacon, "EquippedItemClass": -1,
                 "Effect_1": EFFECT_HEAL, "EffectAura_1": 0,
                 "EffectBasePoints_1": 0,
+                "ImplicitTargetA_1": TARGET_UNIT_TARGET_ALLY,
+                "EffectRadiusIndex_1": 0,
+                "Effect_2": 0, "EffectAura_2": 0, "ImplicitTargetA_2": 0,
+                "Effect_3": 0, "EffectAura_3": 0, "ImplicitTargetA_3": 0,
+            },
+        },
+        {  # 401462 Rewind Time: instant heal on a beaconed ally for the damage they
+           # took over the last 5s. The amount is computed in script and injected via
+           # SetEffectValue (no level curve, no spellpower) -- see
+           # spell_sod_mage_rewind_time.cpp. The SoD rune-grant is 401734; this is the
+           # ability it teaches. Cloned from Lesser Heal (2050) for an instant heal.
+            "id": 401462, "client": True, "template": 2050,  # clone Lesser Heal
+            "skill_line": SKILL_ARCANE,  # spellbook tab: Arcane
+            "name": "Rewind Time", "script": "spell_sod_mage_rewind_time",
+            "desc": "Your current target with your Temporal Beacon instantly heals all "
+                    "damage taken over the last 5 sec. Ineffective on targets that did "
+                    "not have a Temporal Beacon 5 sec ago.",
+            # Explicit zero coefficients: the heal equals the damage taken, modified
+            # only by +healing% and crit. Without this row an instant heal would
+            # inherit AzerothCore's default ~43% spellpower coefficient.
+            "bonus": {"direct": 0.0, "dot": 0.0, "ap": 0.0, "ap_dot": 0.0},
+            "overrides": {
+                "Attributes": 0, "AttributesEx": 0,
+                "CastingTimeIndex": cast_instant, "DurationIndex": 0,
+                "RecoveryTime": 30000, "CategoryRecoveryTime": 0,
+                "StartRecoveryCategory": 133, "StartRecoveryTime": 1500,  # 1.5s GCD
+                # 60yd in SoD; we use the beacon's range so a rune can reach any still-
+                # valid beacon target (the tooltip then reads 100yd -- benign).
+                "RangeIndex": range_100, "PowerType": 0,
+                "ManaCost": 0, "ManaCostPct": 0,  # CDN tooltip lists no power cost
+                "SchoolMask": SCHOOL_MASK_ARCANE,
+                "SpellIconID": icon_rewind, "EquippedItemClass": -1, "SpellLevel": 0,
+                "Effect_1": EFFECT_HEAL, "EffectAura_1": 0,
+                "EffectBasePoints_1": 0,  # script sets the value (damage taken in window)
                 "ImplicitTargetA_1": TARGET_UNIT_TARGET_ALLY,
                 "EffectRadiusIndex_1": 0,
                 "Effect_2": 0, "EffectAura_2": 0, "ImplicitTargetA_2": 0,

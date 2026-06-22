@@ -53,6 +53,10 @@ enum SodMageSpells
     SPELL_SOD_MAGE_ARCANE_BLAST_RUNE    = 900003, // hidden driver: Burst <-> Nether Vortex
     SPELL_SOD_MAGE_NETHER_VORTEX        = 900004, // proc aura: Slow on real Arcane Blast
     SPELL_SOD_MAGE_ARCANE_CHARGE        = 900005, // Zoram Strand discovery progress buff
+    // Rewind Time (Wrist rune). 401462 is the active ability the SoD rune-grant
+    // (401734) teaches: an instant heal on a beaconed ally for the damage they took
+    // over the last few seconds. See spell_sod_mage_rewind_time.cpp.
+    SPELL_SOD_MAGE_REWIND_TIME          = 401462, // beacon-gated "rewind" heal
 };
 
 // Core spells the Arcane Blast rune keys on (not ours). The real Arcane Blast ranks
@@ -122,6 +126,14 @@ inline uint32 SodMageEnlightenmentLowPct()
 inline uint32 SodMageEnlightenmentPollMs()
 {
     return sConfigMgr->GetOption<uint32>("SodMage.Enlightenment.PollMs", 5000);
+}
+
+// Rewind Time lookback (ms). Both the damage window summed by the heal and the
+// minimum beacon age required for it to take effect ("had a Temporal Beacon 5 sec
+// ago"). SoD is 5s; admin-tunable. Config is in whole seconds.
+inline uint32 SodMageRewindTimeWindowMs()
+{
+    return sConfigMgr->GetOption<uint32>("SodMage.RewindTime.WindowSeconds", 5) * 1000;
 }
 
 #endif // MODULE_SOD_MAGE_H

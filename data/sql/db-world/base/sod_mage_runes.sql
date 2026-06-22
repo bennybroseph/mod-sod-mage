@@ -45,6 +45,13 @@
 --   capped stand-in Arcane Burst (400574) until the Mage trains the real Arcane Blast
 --   at 64, then swaps to Nether Vortex (900004). spell_id is the DRIVER, not 400574.
 --   icon `spell_arcane_blast` matches the granted ability's theme.
+--
+-- Mapping for rune 7000007 (Rewind Time -> spell 401462):
+--   class_mask 128 = Mage
+--   slot_mask   32 = Wrist          (1 << RUNE_SLOT_WRIST  = 1 << 5)
+--   401462 is the active ability SoD's rune-grant 401734 teaches; icon must equal
+--   its displayed icon (`spell_holy_borrowedtime`, the `icon_rewind` texture in
+--   tools/sod_spells.py).
 
 SET @rune_tbl := (SELECT COUNT(*) FROM information_schema.tables
                   WHERE table_schema = DATABASE() AND table_name = 'rune_template');
@@ -70,6 +77,9 @@ SET @sql := IF(@rune_tbl > 0,
      ''mod-sod-mage'', 1),
     (7000006, 900003, 128, 64, ''Arcane Blast'', ''spell_arcane_blast'',
      ''Grants Arcane Blast (as Arcane Burst) until you can train the real spell at level 64; afterward grants Nether Vortex, causing your Arcane Blast to apply Slow.'',
+     ''mod-sod-mage'', 1),
+    (7000007, 401462, 128, 32, ''Rewind Time'', ''spell_holy_borrowedtime'',
+     ''Instantly heals an ally carrying your Temporal Beacon for all damage they took over the last 5 sec. Ineffective if the beacon was applied less than 5 sec ago.'',
      ''mod-sod-mage'', 1)
  ON DUPLICATE KEY UPDATE
     `spell_id`    = VALUES(`spell_id`),
