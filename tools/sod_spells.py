@@ -63,6 +63,7 @@ def build_spells(idx):
     dur_3s = idx["dur"][3000]
     dur_8s = idx["dur"][8000]
     dur_30s = idx["dur"][30000]
+    dur_30min = idx["dur"][1800000]
     dur_perm = idx["dur"][-1]
     range_40 = idx["range"][40.0]
     range_35 = idx["range"][35.0]
@@ -456,6 +457,32 @@ def build_spells(idx):
                 "SpellPhaseMask": 2,   # PROC_SPELL_PHASE_HIT
                 "HitMask": 0, "AttributesMask": 2, "DisableEffectsMask": 0,
                 "ProcsPerMinute": 0, "Chance": 0, "Cooldown": 0, "Charges": 0,
+            },
+        },
+        {  # 900005 Arcane Charge: the Zoram Strand discovery progress buff. Casting
+           # Arcane Explosion near each of the three crystals (in order) adds a stack via
+           # the player_sod_mage_arcane_crystals PlayerScript; at 3 stacks the script
+           # consumes it and grants Spell Notes: Arcane Blast (211691). A pure visible
+           # tracker (AURA_DUMMY, no effect) -- the stack count IS the progress. client
+           # True so it shows; 30 min so players have time. Cloned from Rejuvenation.
+            "id": 900005, "client": True, "template": 774,  # clone Rejuvenation
+            "name": "Arcane Charge",
+            "desc": "Building arcane energy.",
+            "aura_desc": "Building arcane energy.",
+            "overrides": {
+                "Attributes": 0, "AttributesEx": 0,
+                "CastingTimeIndex": cast_instant, "DurationIndex": dur_30min,
+                "CumulativeAura": 3,
+                "RangeIndex": range_self, "PowerType": 0, "ManaCost": 0,
+                "ManaCostPct": 0, "SchoolMask": SCHOOL_MASK_ARCANE,
+                "SpellIconID": icon_arcane_surge, "EquippedItemClass": -1,  # spell_arcane_arcanetorrent
+                "SpellLevel": 0,
+                "Effect_1": EFFECT_APPLY_AURA, "EffectAura_1": AURA_DUMMY,
+                "EffectBasePoints_1": 0,
+                "ImplicitTargetA_1": TARGET_UNIT_CASTER,
+                "EffectRadiusIndex_1": 0,
+                "Effect_2": 0, "EffectAura_2": 0, "ImplicitTargetA_2": 0,
+                "Effect_3": 0, "EffectAura_3": 0, "ImplicitTargetA_3": 0,
             },
         },
         {  # 412324 Enlightenment: the passive the Chest rune teaches. SoD's

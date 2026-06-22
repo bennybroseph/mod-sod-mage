@@ -140,13 +140,15 @@ With the engine present, the runes demonstrate both of the engine's
   city's supply faction ([`mod-sod-world`](../mod-sod-world)'s supply officers), buy
   **Spell Notes: Arcane Surge** from them, and use it to unlock the rune. (Mage-only
   and bind-on-pickup, so the notes only show on the vendor for Mages.)
-- **Arcane Blast** (Hands) — *available by class* (no unlock wired yet). Engraving it is
-  **dual-mode**: until you can train the real Arcane Blast at level 64 it grants a
-  capped stand-in, **Arcane Burst** (a 2.5s Arcane nuke that feeds the Chronomancy
-  healing kit but stops scaling at 64 so it never out-paces the real spell); once you
-  know the real Arcane Blast it drops Arcane Burst and instead grants **Nether Vortex**,
-  causing your Arcane Blast to apply **Slow** to a target it hits that isn't already
-  slowed.
+- **Arcane Blast** (Hands) — *discovery-unlocked.* In **Zoram Strand, Ashenvale**, cast
+  **Arcane Explosion** on three purple crystals **in order** (Southern → Middle →
+  Northern) to build a stacking **Arcane Charge** buff; at three stacks you receive
+  **Spell Notes: Arcane Blast**, which unlocks the rune. Engraving it is **dual-mode**:
+  until you can train the real Arcane Blast at level 64 it grants a capped stand-in,
+  **Arcane Burst** (a 2.5s Arcane nuke that feeds the Chronomancy healing kit but stops
+  scaling at 64 so it never out-paces the real spell); once you know the real Arcane
+  Blast it drops Arcane Burst and instead grants **Nether Vortex**, causing your Arcane
+  Blast to apply **Slow** to a target it hits that isn't already slowed.
 
 Without the engine, the items and combines still work — only the final unlock
 no-ops.

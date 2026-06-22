@@ -52,12 +52,29 @@ enum SodMageSpells
     SPELL_SOD_MAGE_ARCANE_BURST         = 400574, // rune Arcane Blast stand-in (capped)
     SPELL_SOD_MAGE_ARCANE_BLAST_RUNE    = 900003, // hidden driver: Burst <-> Nether Vortex
     SPELL_SOD_MAGE_NETHER_VORTEX        = 900004, // proc aura: Slow on real Arcane Blast
+    SPELL_SOD_MAGE_ARCANE_CHARGE        = 900005, // Zoram Strand discovery progress buff
 };
 
 // Core spells the Arcane Blast rune keys on (not ours). The real Arcane Blast ranks
 // (trainable from level 64) decide the rune's mode; Slow is what Nether Vortex applies.
 constexpr uint32 SPELL_MAGE_ARCANE_BLAST_RANKS[] = { 30451, 42894, 42896, 42897 };
 constexpr uint32 SPELL_MAGE_SLOW = 31589;
+
+// Zoram Strand crystal discovery (Arcane Blast rune acquisition). Casting any player
+// Arcane Explosion rank near the next crystal in order builds Arcane Charge; at 3 stacks
+// the player gets Spell Notes: Arcane Blast (211691), which unlocks the Hands rune.
+constexpr uint32 SPELL_MAGE_ARCANE_EXPLOSION_RANKS[] =
+    { 1449, 8437, 8438, 8439, 10201, 10202, 27080, 27082, 42920, 42921 };
+constexpr uint32 ITEM_SOD_MAGE_ARCANE_BLAST_NOTES = 211691;
+// The three crystals in sequence: index 0 = Southern (charged at 0 stacks), 1 = Middle,
+// 2 = Northern. Custom GO band 701100-701199 (sod-world owns 701000-701099).
+constexpr uint32 GO_SOD_MAGE_ARCANE_CRYSTALS[] = { 701100, 701101, 701102 };
+
+// How close (yards) to a crystal you must Arcane Explosion to charge it.
+inline float SodMageArcaneCrystalsRange()
+{
+    return sConfigMgr->GetOption<float>("SodMage.ArcaneCrystals.Range", 15.0f);
+}
 
 // Living Flame's mover is a custom creature in the module's reserved creature
 // band (700200-700299), shown with the Fire Elemental model (a walking flame).
