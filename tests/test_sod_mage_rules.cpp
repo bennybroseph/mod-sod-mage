@@ -130,6 +130,18 @@ TEST(SodMageLevelCurves, ArcaneBurstHitsHarderThanSurge)
     EXPECT_GT(ArcaneBurstMaxDamage(64), ArcaneSurgeMaxDamage(64));
 }
 
+TEST(SodMageLevelCurves, LivingBombDamage)
+{
+    // Shared SoD curve: DoT tick = c(L)*0.85 (4 ticks/12s), explosion = c(L)*1.71.
+    EXPECT_EQ(LivingBombDotTick(1), 11);
+    EXPECT_EQ(LivingBombExplosion(1), 23);
+    EXPECT_EQ(LivingBombDotTick(60), 147);
+    EXPECT_EQ(LivingBombExplosion(60), 297);
+    // The explosion (x1.71) dwarfs a single DoT tick (x0.85), and both scale up.
+    EXPECT_GT(LivingBombExplosion(60), LivingBombDotTick(60));
+    EXPECT_GT(LivingBombExplosion(60), LivingBombExplosion(1));
+}
+
 // --- Enlightenment mana-state gating (the two binary thresholds) ---
 TEST(SodMageEnlightenment, ShippedDefaults)
 {

@@ -92,6 +92,24 @@ namespace SodMageRules
         return int32((13.828124f + 0.018012f * l + 0.044141f * l * l) * 5.27f);
     }
 
+    // Living Bomb (the rune) shares the same base curve. The SoD tooltip:
+    //   DoT  per tick = c(L) * 85/100  (4 ticks over 12 sec)
+    //   explosion     = c(L) * 171/100 (after 12 sec or on dispel, 10yd AoE)
+    // where c(L) = 13.828124 + 0.018012*L + 0.044141*L^2. Set in script (works
+    // with no gear); gear spell power adds on top via spell_bonus_data. Living
+    // Spark (the stand-in) reuses the explosion at a level capped to the SoD level.
+    inline int32 LivingBombDotTick(uint8 level)
+    {
+        float l = float(level);
+        return int32((13.828124f + 0.018012f * l + 0.044141f * l * l) * 0.85f);
+    }
+
+    inline int32 LivingBombExplosion(uint8 level)
+    {
+        float l = float(level);
+        return int32((13.828124f + 0.018012f * l + 0.044141f * l * l) * 1.71f);
+    }
+
     // Arcane Surge's damage multiplier from remaining mana: 1.0 at empty, up to
     // 1 + maxBonusPct/100 at full (SoD: +300% at full mana). Guards max == 0.
     inline float ArcaneSurgeManaMultiplier(uint32 curMana, uint32 maxMana, uint32 maxBonusPct)

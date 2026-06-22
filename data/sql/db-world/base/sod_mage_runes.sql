@@ -52,6 +52,15 @@
 --   401462 is the active ability SoD's rune-grant 401734 teaches; icon must equal
 --   its displayed icon (`spell_holy_borrowedtime`, the `icon_rewind` texture in
 --   tools/sod_spells.py).
+--
+-- Mapping for rune 7000008 (Living Bomb -> spell 900006, the hidden driver):
+--   class_mask 128 = Mage
+--   slot_mask   64 = Hands          (1 << RUNE_SLOT_HANDS  = 1 << 6) -- a second Hands
+--     option alongside Arcane Blast (7000006); you engrave one. The rune teaches the
+--     hidden driver 900006, which grants the Living Spark stand-in (900007) until you
+--     learn the real Living Bomb, then a cast-redirect fires the Scorch-tagged copy.
+--     icon `ability_mage_livingbomb` matches the granted ability (the `icon_living_bomb`
+--     texture in tools/sod_spells.py).
 
 SET @rune_tbl := (SELECT COUNT(*) FROM information_schema.tables
                   WHERE table_schema = DATABASE() AND table_name = 'rune_template');
@@ -80,6 +89,9 @@ SET @sql := IF(@rune_tbl > 0,
      ''mod-sod-mage'', 1),
     (7000007, 401462, 128, 32, ''Rewind Time'', ''spell_holy_borrowedtime'',
      ''Instantly heals an ally carrying your Temporal Beacon for all damage they took over the last 5 sec. Ineffective if the beacon was applied less than 5 sec ago.'',
+     ''mod-sod-mage'', 1),
+    (7000008, 900006, 128, 64, ''Living Bomb'', ''ability_mage_livingbomb'',
+     ''Grants Living Spark (a no-aggro delayed explosion) until you learn the real Living Bomb; afterward your Living Bomb additionally benefits from all talents and effects that trigger from or modify Scorch.'',
      ''mod-sod-mage'', 1)
  ON DUPLICATE KEY UPDATE
     `spell_id`    = VALUES(`spell_id`),

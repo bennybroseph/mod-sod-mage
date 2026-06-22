@@ -156,6 +156,14 @@ With the engine present, the runes demonstrate both of the engine's
   — ineffective unless the beacon has been on them that long. It's coded as a real heal,
   so anything that modifies healing (+healing%, healing crits) applies. (Mage-only and
   bind-on-pickup, so the notes only show on Grizzby for Mages.)
+- **Living Bomb** (Hands) — *acquisition TBD.* Engraving it is **dual-mode** (like
+  Arcane Blast): until you learn the real Living Bomb it grants **Living Spark** — a
+  delayed Fire bomb you can plant on a target **without aggroing it**; after a 12 sec
+  fuse it explodes for AoE Fire damage (no damage-over-time, so it never pulls until it
+  detonates). Once you know the real Living Bomb, casting it instead fires a Scorch-tagged
+  copy, so your **Living Bomb additionally benefits from all talents and effects that
+  trigger from or modify Scorch** — and *only* for rune-holders (a cast-redirect, not a
+  global change). Shares the Hands slot with Arcane Blast; you engrave one.
 
 Without the engine, the items and combines still work — only the final unlock
 no-ops.

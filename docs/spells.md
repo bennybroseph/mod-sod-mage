@@ -126,6 +126,46 @@ SoD's rune-grant `401734` teaches.
   rune mapping live in `sod_mage_rewind_time_unlock.sql`; Grizzby's `npc_vendor` stock
   row is there too, while his creature/spawn are in `mod-sod-world`.
 
+## Living Bomb — `900006` *(Hands rune)*
+
+A dual-mode rune (same shape as Arcane Blast): a hidden driver (`900006`,
+`spell_sod_mage_living_bomb_rune`) polls whether the Mage knows the real WotLK Living
+Bomb (`44457`/`55359`/`55360`).
+
+- **Before real Living Bomb — Living Spark (`900007`).** A castable Fire stand-in
+  (35yd, instant). It applies a **silent 12s fuse** (an `AURA_DUMMY` with no periodic
+  damage and `SPELL_ATTR1_NO_THREAT`, which also suppresses initial aggro), so you can
+  **plant it on a mob without pulling**. When the fuse expires (or is dispelled),
+  `spell_sod_mage_living_spark` casts the **explosion** (`900008`): `c(L)·1.71` Fire to
+  everything within 10yd (radius index 13) — *that* is what finally aggros. Damage is
+  capped at `SodMage.LivingBomb.ScalingCapLevel` (60) so the stand-in never out-scales
+  the real spell. `c(L) = 13.828124 + 0.018012·L + 0.044141·L²` (the shared SoD curve).
+- **After real Living Bomb — the gated Scorch synergy.** The driver drops Living Spark;
+  a **cast-redirect** (`spell_sod_mage_living_bomb_redirect`, bound to the stock Living
+  Bomb via `spell_script_names` in `sod_mage_living_bomb.sql`) then, **for rune-holders
+  only**, suppresses the stock aura (`PreventHitAura`) and fires a **copy** of the same
+  rank. The copy is a full Living Bomb (`c(L)·0.85`/tick ×4 over 12s, then the explosion)
+  but tagged with **Mage family + (Living Bomb | Scorch) class mask** (`SpellClassMask`
+  `0x10` / `0x20000` / `0x8`). Because `SpellInfo::IsAffected` is the *same* matcher used by
+  talent SpellMods **and** `spell_proc` rows, the copy "benefits from all talents and
+  effects that trigger from or modify Scorch" (Improved Scorch's fire-crit debuff, etc.) —
+  with **full coverage, gated to the rune** (no global edit to the stock spell). Non-rune
+  mages' Living Bomb is untouched.
+- **Per-rank copy (icon 3000, MoE-safe).** The copy keeps `SpellIconID 3000` so it reads as
+  a real Living Bomb — but that makes the core's **Master of Elements** treat it as a Living
+  Bomb explosion and call `GetSpellWithRank(44457, GetSpellRank(copy))`, which **crashes** on
+  a spell with no rank (rank 0 walks off the chain, SpellMgr.cpp:648). So the copy mirrors the
+  real spell's three ranks: DoT `900009/900010/900011` (R1/R2/R3) and explosion
+  `900012/900013/900014`, wired into `spell_ranks` (`sod_mage_living_bomb.sql`) and
+  index-matched to `44457/55359/55360` in `spell_sod_mage.h`. `GetSpellRank` then returns 1–3
+  and MoE resolves the matching real rank (correct mana refund, no crash). All ranks deal the
+  same level-curve damage; the ranks exist only for that mapping. The copies are cast-only
+  (never learned), so chain membership has no supersession/learn side-effects.
+- **SP coefficients are placeholders** (explosion `direct 1.0`, DoT `dot 0.8`) — the SoD
+  `c(L)` curve is sourced from the tooltip, but the gear coefficient isn't; **tune to wago**.
+- **Acquisition:** not built yet — `.learn 900007` (Living Spark) / `.rune` to unlock the
+  Hands rune (`7000008`). Shares the slot with Arcane Blast; engrave one.
+
 ## Living Flame — `401556`
 
 A spellfire flame that creeps toward the target, dealing **Spellfire (Fire +
@@ -266,6 +306,8 @@ curves and `tooltip_fit(curve, lo=1, hi=80)` — the fit anchors (full server ra
 | `SodMage.Enlightenment.LowManaPct` | 30 | Below this mana %, part of mana regen continues through the FSR. |
 | `SodMage.Enlightenment.PollMs` | 5000 | How often (ms) Enlightenment re-evaluates mana state (1000ms resolution). |
 | `SodMage.RewindTime.WindowSeconds` | 5 | Rewind Time's lookback: damage window summed, and the minimum beacon age for it to take effect. |
+| `SodMage.LivingBomb.ScalingCapLevel` | 60 | Level cap for Living Spark's explosion scaling (so the stand-in never out-scales real Living Bomb). |
+| `SodMage.LivingBomb.FuseSeconds` | 12 | How long a planted Living Spark waits before it detonates. |
 
 ## Accuracy vs. SoD (checked against wago.tools, build 1.15.8.x)
 

@@ -57,12 +57,35 @@ enum SodMageSpells
     // (401734) teaches: an instant heal on a beaconed ally for the damage they took
     // over the last few seconds. See spell_sod_mage_rewind_time.cpp.
     SPELL_SOD_MAGE_REWIND_TIME          = 401462, // beacon-gated "rewind" heal
+    // Living Bomb (Hands rune). 900006 is the hidden driver the rune teaches: it grants
+    // the Living Spark stand-in (900007 cast -> 900008 explosion) until the player learns
+    // the real WotLK Living Bomb, then a cast-redirect fires a Scorch-tagged copy. The
+    // copy is PER-RANK (900009-900014, below) so Master of Elements' rank lookup resolves;
+    // see spell_sod_mage_living_bomb_* / _living_spark.
+    SPELL_SOD_MAGE_LIVING_BOMB_RUNE      = 900006, // hidden driver: grants Living Spark
+    SPELL_SOD_MAGE_LIVING_SPARK          = 900007, // stand-in: no-DoT bomb, no aggro until boom
+    SPELL_SOD_MAGE_LIVING_SPARK_BOOM     = 900008, // Living Spark explosion (plain Fire)
 };
+
+// The Scorch-tagged Living Bomb copy, mirrored across the real spell's three ranks so the
+// core's Master of Elements (Mage + icon 3000 + no mana -> GetSpellWithRank(44457, rank))
+// resolves the matching real-Living-Bomb rank instead of crashing on an out-of-range one.
+// Index i lines up with SPELL_MAGE_LIVING_BOMB_RANKS[i]: cast real LB Rx -> COPY_DOTS[x]
+// -> (on expire) COPY_BOOMS[x]. The two id lists are wired into spell_ranks (R1/R2/R3) in
+// data/sql/db-world/base/sod_mage_living_bomb.sql. All ranks deal the same level-curve
+// damage; the ranks exist only for the core's rank mapping.
+constexpr uint32 SOD_MAGE_LIVING_BOMB_COPY_DOTS[]  = { 900009, 900010, 900011 };
+constexpr uint32 SOD_MAGE_LIVING_BOMB_COPY_BOOMS[] = { 900012, 900013, 900014 };
 
 // Core spells the Arcane Blast rune keys on (not ours). The real Arcane Blast ranks
 // (trainable from level 64) decide the rune's mode; Slow is what Nether Vortex applies.
 constexpr uint32 SPELL_MAGE_ARCANE_BLAST_RANKS[] = { 30451, 42894, 42896, 42897 };
 constexpr uint32 SPELL_MAGE_SLOW = 31589;
+
+// The real WotLK Living Bomb ranks the Living Bomb rune keys on. While the player knows
+// none, the driver grants Living Spark; once they do, the cast-redirect (bound to these
+// ids) swaps their Living Bomb for the Scorch-tagged copy.
+constexpr uint32 SPELL_MAGE_LIVING_BOMB_RANKS[] = { 44457, 55359, 55360 };
 
 // Zoram Strand crystal discovery (Arcane Blast rune acquisition). Casting any player
 // Arcane Explosion rank near the next crystal in order builds Arcane Charge; at 3 stacks
@@ -108,6 +131,19 @@ inline bool SodMageEnabled()
 inline uint32 SodMageArcaneBlastCapLevel()
 {
     return sConfigMgr->GetOption<uint32>("SodMage.ArcaneBlast.ScalingCapLevel", 64);
+}
+
+// Living Spark (the Living Bomb stand-in) stops scaling at the SoD Living Bomb level
+// (60) so it never out-scales the real spell; admin-tunable. The fuse is how long a
+// planted Spark waits before it explodes (SoD Living Bomb is 12s).
+inline uint32 SodMageLivingBombCapLevel()
+{
+    return sConfigMgr->GetOption<uint32>("SodMage.LivingBomb.ScalingCapLevel", 60);
+}
+
+inline uint32 SodMageLivingBombFuseMs()
+{
+    return sConfigMgr->GetOption<uint32>("SodMage.LivingBomb.FuseSeconds", 12) * 1000;
 }
 
 // Enlightenment tunables. The high/low mana thresholds gate the two sub-auras;

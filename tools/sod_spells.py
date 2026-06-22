@@ -22,6 +22,13 @@ SPELLVIS_FIRE_BLAST = 143
 SPELLVIS_LIVING_FLAME_CAST = 700556
 SPELLVIS_FIELD_IMPACT_KIT = 3
 
+# Real Living Bomb's own client visuals (stock SpellVisual rows present in the
+# 3.3.5a client): 44457's persistent bomb overlay and 44461's detonation burst.
+# The rune copy borrows both so it looks exactly like a real Living Bomb; the
+# Living Spark stand-in reuses the same detonation for its explosion.
+SPELLVIS_LIVING_BOMB_DOT = 10692
+SPELLVIS_LIVING_BOMB_BOOM = 10693
+
 
 def living_flame_tick(level):
     return 13.828124 + 0.018012 * level + 0.044141 * level * level
@@ -38,6 +45,12 @@ def arcane_surge_min(level):
 # the client tooltip shows the low end. Server rolls the range and caps the level at 64.
 def arcane_burst_min(level):
     return living_flame_tick(level) * 4.53
+
+
+# Living Bomb (the rune) shares the same base curve. SoD tooltip: explosion = c(L)*1.71;
+# DoT per tick = c(L)*0.85 (4 ticks/12s). c(L) == living_flame_tick(level).
+def living_bomb_explosion(level):
+    return living_flame_tick(level) * 1.71
 
 
 def regen_tick(level):
@@ -62,6 +75,7 @@ def build_spells(idx):
     cast_instant = idx["cast"][0]
     dur_3s = idx["dur"][3000]
     dur_8s = idx["dur"][8000]
+    dur_12s = idx["dur"][12000]
     dur_30s = idx["dur"][30000]
     dur_30min = idx["dur"][1800000]
     dur_perm = idx["dur"][-1]
@@ -85,6 +99,14 @@ def build_spells(idx):
     icon_arcane_surge = idx["icon"]["spell_arcane_arcanetorrent"]
     icon_arcane_blast = idx["icon"]["spell_arcane_blast"]
     icon_rewind = idx["icon"]["spell_holy_borrowedtime"]
+    icon_living_bomb = idx["icon"]["ability_mage_livingbomb"]  # SpellIconID 3000
+    # The Living Bomb copies (DoT + explosion) safely use icon 3000: they're Mage-family,
+    # no-mana DAMAGE spells, which the core's Master of Elements treats as real Living Bomb
+    # ranks -- but they're wired into spell_ranks, so its GetSpellWithRank(44457, rank)
+    # resolves instead of crashing. Living Spark's explosion (900008) is the stand-in's boom
+    # (no Mage family / Scorch tags, not in any chain), so it keeps a plain fire icon to stay
+    # clear of that special-case entirely; the icon is never shown anyway (instant damage).
+    icon_living_bomb_boom = idx["icon"]["spell_fire_selfdestruct"]
 
     # Client-only tooltip scaling: a linear fit of the SoD curve over the full
     # server level range 1..80 (exact at levels 1 and 80, scaling the whole way).
@@ -95,8 +117,11 @@ def build_spells(idx):
     flame_tip_int, flame_tip_flt = tooltip_fit(living_flame_tick, lo=1, hi=80)
     surge_tip_int, surge_tip_flt = tooltip_fit(arcane_surge_min, lo=1, hi=80)
     burst_tip_int, burst_tip_flt = tooltip_fit(arcane_burst_min, lo=1, hi=80)
+    # Living Spark's explosion tooltip is fit to the capped range (the stand-in stops
+    # scaling at the SoD Living Bomb level 60); above 60 the linear fit reads slightly high.
+    boom_tip_int, boom_tip_flt = tooltip_fit(living_bomb_explosion, lo=1, hi=60)
 
-    return [
+    spells = [
         {  # 401417 Regeneration: channeled 3s single-target HoT. A channel uses
            # an instant CastingTimeIndex; its length comes from the duration.
             "id": 401417, "client": True, "template": 139,  # clone Renew
@@ -608,7 +633,157 @@ def build_spells(idx):
                 "Effect_3": 0, "EffectAura_3": 0, "ImplicitTargetA_3": 0,
             },
         },
+        {  # 900006 Living Bomb (rune driver): the hidden passive the Hands rune teaches.
+           # A 1s periodic dummy (spell_sod_mage_living_bomb_rune) that polls whether the
+           # player knows the real WotLK Living Bomb. If not, it grants the Living Spark
+           # stand-in (900007); once they do, it drops Living Spark and the cast-redirect
+           # on the real Living Bomb takes over (firing the Scorch-tagged copy 900009).
+            "id": 900006, "client": True, "template": 774,  # clone Rejuvenation
+            "name": "Living Bomb", "script": "spell_sod_mage_living_bomb_rune",
+            "desc": "Living Bomb additionally benefits from all talents and effects "
+                    "that trigger from or modify Scorch.",
+            "aura_desc": "Living Bomb additionally benefits from all talents and "
+                         "effects that trigger from or modify Scorch.",
+            "overrides": {
+                "Attributes": SPELL_ATTR0_PASSIVE | SPELL_ATTR0_DO_NOT_DISPLAY,
+                "AttributesEx": 0,
+                "CastingTimeIndex": cast_instant, "DurationIndex": dur_perm,
+                "RangeIndex": range_self, "PowerType": 0, "ManaCost": 0,
+                "ManaCostPct": 0, "SchoolMask": SCHOOL_MASK_FIRE,
+                "SpellIconID": icon_living_bomb, "EquippedItemClass": -1,
+                "SpellLevel": 0,
+                "Effect_1": EFFECT_APPLY_AURA, "EffectAura_1": AURA_PERIODIC_DUMMY,
+                "EffectAuraPeriod_1": 1000, "EffectBasePoints_1": 0,
+                "ImplicitTargetA_1": TARGET_UNIT_CASTER,
+                "EffectRadiusIndex_1": 0,
+                "Effect_2": 0, "EffectAura_2": 0, "ImplicitTargetA_2": 0,
+                "Effect_3": 0, "EffectAura_3": 0, "ImplicitTargetA_3": 0,
+            },
+        },
+        {  # 900007 Living Spark: the Living Bomb stand-in granted before the player can
+           # cast the real spell. Instant; applies a 12s fuse aura (AURA_DUMMY) that deals
+           # NO damage and does NOT pull (SPELL_ATTR1_NO_THREAT also suppresses initial
+           # aggro). spell_sod_mage_living_spark fires the explosion (900008) when the fuse
+           # expires or is dispelled -- only then does the mob aggro. Clone of Fire Blast.
+            "id": 900007, "client": True, "template": 2136,  # clone Fire Blast
+            "skill_line": SKILL_FIRE,
+            "name": "Living Spark", "script": "spell_sod_mage_living_spark",
+            "desc": "Plants an unstable spark on the target without provoking it. After "
+                    "$d sec it detonates, dealing $900008s1 Fire damage to all enemies "
+                    "within 10 yards.",
+            "overrides": {
+                "Attributes": 0, "AttributesEx": SPELL_ATTR1_NO_THREAT,
+                "CastingTimeIndex": cast_instant, "DurationIndex": dur_12s,
+                "RangeIndex": range_35, "PowerType": 0, "ManaCost": 0,
+                "ManaCostPct": 22, "SchoolMask": SCHOOL_MASK_FIRE,
+                "SpellIconID": icon_living_bomb, "EquippedItemClass": -1,
+                "SpellLevel": 0,
+                "Effect_1": EFFECT_APPLY_AURA, "EffectAura_1": AURA_DUMMY,  # silent fuse
+                "EffectAuraPeriod_1": 0, "EffectBasePoints_1": 0,
+                "ImplicitTargetA_1": TARGET_UNIT_TARGET_ENEMY,
+                "EffectRadiusIndex_1": 0,
+                "Effect_2": 0, "EffectAura_2": 0, "ImplicitTargetA_2": 0,
+                "Effect_3": 0, "EffectAura_3": 0, "ImplicitTargetA_3": 0,
+            },
+        },
+        {  # 900008 Living Spark explosion: the AoE that fires when the fuse ends. Fire,
+           # 10yd (radius index 13). Damage = the SoD explosion curve (c(L)*1.71), injected
+           # by spell_sod_mage_living_spark at a level capped to the SoD Living Bomb level;
+           # gear spell power adds via spell_bonus_data (direct 1.0 -- TUNABLE; no wago
+           # coefficient sourced yet). Clone of Flamestrike for a ground-fire AoE visual.
+            "id": 900008, "client": True, "template": 2120,  # clone Flamestrike
+            "name": "Living Spark", "script": "spell_sod_mage_living_spark_boom",
+            "bonus": {"direct": 1.0, "dot": 0.0, "ap": 0.0, "ap_dot": 0.0},
+            "client_overrides": dict(boom_tip_int),
+            "client_overrides_float": dict(boom_tip_flt),
+            "overrides": {
+                "Attributes": 0, "AttributesEx": 0,
+                "CastingTimeIndex": cast_instant, "DurationIndex": 0,
+                "RangeIndex": range_100, "PowerType": 0, "ManaCost": 0,
+                "ManaCostPct": 0, "SchoolMask": SCHOOL_MASK_FIRE,
+                "DefenseType": 1,  # SPELL_DAMAGE_CLASS_MAGIC
+                "SpellVisualID_1": SPELLVIS_LIVING_BOMB_BOOM,  # real LB detonation
+                "SpellIconID": icon_living_bomb_boom, "EquippedItemClass": -1,
+                "SpellLevel": 0,
+                "Effect_1": EFFECT_SCHOOL_DAMAGE, "EffectAura_1": 0,
+                "EffectBasePoints_1": 0,  # set in script (spell_sod_mage_living_spark_boom)
+                "ImplicitTargetA_1": TARGET_UNIT_DEST_AREA_ENEMY,
+                "EffectRadiusIndex_1": 13,  # 10 yd
+                "Effect_2": 0, "EffectAura_2": 0, "ImplicitTargetA_2": 0,
+                "Effect_3": 0, "EffectAura_3": 0, "ImplicitTargetA_3": 0,
+            },
+        },
     ]
+
+    # Living Bomb (rune copy), PER RANK. The cast-redirect fires the same-rank copy for a
+    # rune-holder who knows the real Living Bomb; the copy is a full Living Bomb (DoT
+    # c(L)*0.85/tick 4 ticks/12s -> explosion c(L)*1.71, 10yd) tagged with Scorch's class
+    # mask so it benefits from ALL Scorch talents/effects (the gated synergy). It keeps icon
+    # 3000 + Mage family (reads as a real Living Bomb), and the ranks -- wired into
+    # spell_ranks in sod_mage_living_bomb.sql, index-matched to the real R1/R2/R3 -- let
+    # Master of Elements' GetSpellWithRank(44457, rank) resolve instead of crashing on an
+    # out-of-range rank. All ranks deal the same level-curve damage; they exist only for
+    # that core rank mapping. SP coeffs (DoT 0.8 / explosion 1.0) are TUNABLE (no wago yet).
+    def _living_bomb_copy_dot(spell_id):
+        return {
+            "id": spell_id, "client": True, "template": 2120,  # clone Flamestrike
+            "name": "Living Bomb", "script": "spell_sod_mage_living_bomb_copy",
+            "bonus": {"direct": 0.0, "dot": 0.8, "ap": 0.0, "ap_dot": 0.0},
+            "overrides": {
+                "Attributes": 0, "AttributesEx": 0,
+                "CastingTimeIndex": cast_instant, "DurationIndex": dur_12s,
+                "RangeIndex": range_35, "PowerType": 0, "ManaCost": 0,
+                "ManaCostPct": 0, "SchoolMask": SCHOOL_MASK_FIRE,
+                "DefenseType": 1,  # SPELL_DAMAGE_CLASS_MAGIC
+                "SpellVisualID_1": SPELLVIS_LIVING_BOMB_DOT,  # real LB bomb overlay
+                "SpellIconID": icon_living_bomb, "EquippedItemClass": -1,
+                "SpellLevel": 0,
+                "SpellClassSet": 3,  # SPELLFAMILY_MAGE
+                "SpellClassMask_1": 0x00000010,  # Scorch
+                "SpellClassMask_2": 0x00020000,  # Living Bomb
+                "SpellClassMask_3": 0x00000008,  # Living Bomb
+                "Effect_1": EFFECT_APPLY_AURA, "EffectAura_1": AURA_PERIODIC_DAMAGE,
+                "EffectAuraPeriod_1": 3000, "EffectBasePoints_1": 0,  # set in script
+                "ImplicitTargetA_1": TARGET_UNIT_TARGET_ENEMY,
+                "EffectRadiusIndex_1": 0,
+                "Effect_2": 0, "EffectAura_2": 0, "ImplicitTargetA_2": 0,
+                "Effect_3": 0, "EffectAura_3": 0, "ImplicitTargetA_3": 0,
+            },
+        }
+
+    def _living_bomb_copy_boom(spell_id):
+        return {
+            "id": spell_id, "client": True, "template": 2120,  # clone Flamestrike
+            "name": "Living Bomb", "script": "spell_sod_mage_living_bomb_copy_boom",
+            "bonus": {"direct": 1.0, "dot": 0.0, "ap": 0.0, "ap_dot": 0.0},
+            "overrides": {
+                "Attributes": 0, "AttributesEx": 0,
+                "CastingTimeIndex": cast_instant, "DurationIndex": 0,
+                "RangeIndex": range_100, "PowerType": 0, "ManaCost": 0,
+                "ManaCostPct": 0, "SchoolMask": SCHOOL_MASK_FIRE,
+                "DefenseType": 1,  # SPELL_DAMAGE_CLASS_MAGIC
+                "SpellVisualID_1": SPELLVIS_LIVING_BOMB_BOOM,  # real LB detonation
+                "SpellIconID": icon_living_bomb, "EquippedItemClass": -1,
+                "SpellLevel": 0,
+                "SpellClassSet": 3,  # SPELLFAMILY_MAGE
+                "SpellClassMask_1": 0x00000010,  # Scorch
+                "SpellClassMask_2": 0x00020000,  # Living Bomb
+                "SpellClassMask_3": 0x00000008,  # Living Bomb
+                "Effect_1": EFFECT_SCHOOL_DAMAGE, "EffectAura_1": 0,
+                "EffectBasePoints_1": 0,  # set in script
+                "ImplicitTargetA_1": TARGET_UNIT_DEST_AREA_ENEMY,
+                "EffectRadiusIndex_1": 13,  # 10 yd
+                "Effect_2": 0, "EffectAura_2": 0, "ImplicitTargetA_2": 0,
+                "Effect_3": 0, "EffectAura_3": 0, "ImplicitTargetA_3": 0,
+            },
+        }
+
+    # DoT ranks 900009/900010/900011, explosion ranks 900012/900013/900014 (R1/R2/R3).
+    for _id in (900009, 900010, 900011):
+        spells.append(_living_bomb_copy_dot(_id))
+    for _id in (900012, 900013, 900014):
+        spells.append(_living_bomb_copy_boom(_id))
+    return spells
 
 # Custom SpellVisual rows for sod-client to add (clone_from, zero listed fields).
 SPELL_VISUALS = [

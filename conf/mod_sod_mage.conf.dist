@@ -102,6 +102,22 @@ SodMage.Enlightenment.PollMs = 5000
 SodMage.RewindTime.WindowSeconds = 5
 
 #
+#    SodMage.LivingBomb.ScalingCapLevel
+#        Description: Living Spark (the Living Bomb rune stand-in) stops scaling its
+#                     explosion at this level, so it never out-scales the real Living
+#                     Bomb. SoD Living Bomb is level 60.
+#        Default:     60
+#
+#    SodMage.LivingBomb.FuseSeconds
+#        Description: How long a planted Living Spark waits before it detonates (it does
+#                     no damage and does not aggro until then). SoD Living Bomb is 12 sec.
+#        Default:     12
+#
+
+SodMage.LivingBomb.ScalingCapLevel = 60
+SodMage.LivingBomb.FuseSeconds = 12
+
+#
 #    Disguised-critter seeding (the Enlightenment acquisition event).
 #    As real Elwynn Forest critters spawn, a share are converted in place into the
 #    disguised "Polymorphed Apprentice". The originals are untouched in the DB and
